@@ -1,0 +1,118 @@
+#!/usr/bin/env node
+
+/**
+ * Server Startup Script
+ * This is the entry point for starting the Express application
+ * It creates an HTTP server and listens on the configured port
+ */
+
+/**
+ * Load environment variables from .env file
+ * Silent mode prevents errors if .env file doesn't exist
+ */
+require("dotenv").config({
+  silent: true
+});
+
+// Import Express application
+var app = require('../app');
+
+// Debug logger for server events
+var debug = require('debug')('pragati-infra-app:server');
+
+// HTTP server module
+var http = require('http');
+
+/**
+ * Get port from environment variable or use default port 3000
+ * Normalize the port value (handle strings, numbers, or named pipes)
+ */
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server instance
+ * Passes the Express app as the request handler
+ */
+var server = http.createServer(app);
+
+/**
+ * Start listening on the configured port
+ * Listen on all network interfaces (0.0.0.0)
+ * Set up event listeners for error and listening events
+ */
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize Port Value
+ * Converts port value to a valid number, string (for named pipes), or false
+ * 
+ * @param {String|Number} val - Port value from environment or default
+ * @returns {Number|String|Boolean} Normalized port value
+ */
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  // If not a number, it might be a named pipe (Windows)
+  if (isNaN(port)) {
+    return val;
+  }
+
+  // Valid port number (0-65535)
+  if (port >= 0) {
+    return port;
+  }
+
+  // Invalid port
+  return false;
+}
+
+/**
+ * Error Event Handler
+ * Handles errors that occur when the server tries to listen on the port
+ * 
+ * @param {Error} error - Error object from server
+ */
+function onError(error) {
+  // Only handle listen errors, throw other errors
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  // Format bind address for error message
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // Handle specific listen errors with user-friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      // Port requires elevated privileges (root/admin access)
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      // Port is already in use by another process
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      // Unknown error, throw it
+      throw error;
+  }
+}
+
+/**
+ * Listening Event Handler
+ * Called when the server successfully starts listening
+ * Logs the address and port where the server is listening
+ */
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}

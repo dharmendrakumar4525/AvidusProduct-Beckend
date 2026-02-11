@@ -1,0 +1,104 @@
+<tr>
+   <td class="content-wrap" style="padding: 20px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">
+               Dear {{receiver_name}},
+            </td>
+         </tr>
+
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">             
+            </td>
+         </tr> 
+         <tr>
+            <td class="content-block" style="padding: 0 0 10px;">
+              {{dataObj.vendor_message_header}}
+            </td>
+         </tr>   
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">
+              {{dataObj.vendor_message}}
+            </td>
+         </tr>   
+         <tr>
+            <td class="content-block" style="padding: 0 0 10px;">
+              <div style="font-size: 16px;font-weight:600">Work Order Information:</div>
+            </td>
+         </tr>   
+
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">
+             <div><b>Order Number</b>: #{{dataObj.po_number}}</div>
+             <div><b>Date</b>: {{dataObj.date}}</div>
+             <div><b>Due Date</b>: {{dataObj.due_date}}</div>
+             <div><b>Subtotal</b>: {{dataObj.subtotal}}</div>
+             <div><b>Tax</b>: {{dataObj.total_tax}}</div>
+             <div><b>Freight Charges</b>: {{dataObj.freight_charges}}</div>
+             <div><b>Freight Tax</b>: {{dataObj.freight_tax}}</div>
+             <div><b>Total Amount</b>: {{dataObj.total_amount}}</div>
+            </td>
+         </tr>   
+
+          <tr>
+            <td class="content-block" style="padding: 0 0 20px;">             
+            </td>
+         </tr> 
+
+          <tr>
+            <td class="content-block" style="padding: 0 0 10px;">
+              <div style="font-size: 16px;font-weight:600">Billing Information:</div>
+            </td>
+         </tr> 
+
+            <tr>
+            <td class="content-block" style="padding: 0 0 20px;">
+             <div><b>Bill To</b>: {{dataObj.billing_address.company_name}}</div>
+             <div><b>Billing Address</b>: {{dataObj.billing_address.street_address}} {{dataObj.billing_address.street_address2}} {{dataObj.billing_address.city}} {{dataObj.billing_address.state}} {{dataObj.billing_address.country}} {{dataObj.billing_address.zip_code}}</div>
+             <div><b>Contact Person</b>: {{dataObj.billing_address.contact_person}}</div>
+            </td>
+         </tr>  
+
+
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">             
+            </td>
+         </tr> 
+
+          <tr>
+            <td class="content-block" style="padding: 0 0 10px;">
+              <div style="font-size: 16px;font-weight:600">Shipping Information:</div>
+            </td>
+         </tr> 
+
+            <tr>
+            <td class="content-block" style="padding: 0 0 20px;">
+             <div><b>Ship To</b>: {{dataObj.delivery_address.company_name}}</div>
+             <div><b>Shipping Address</b>: {{dataObj.delivery_address.street_address}} {{dataObj.delivery_address.street_address2}} {{dataObj.delivery_address.city}} {{dataObj.delivery_address.state}} {{dataObj.delivery_address.country}} {{dataObj.delivery_address.zip_code}}</div>
+             <div><b>Contact Person</b>: {{dataObj.delivery_address.contact_person}}</div>
+            </td>
+         </tr>  
+
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">             
+            </td>
+         </tr> 
+          
+         <tr>
+            <td class="content-block" style="padding: 0;">
+                <div style="font-size: 13px;font-weight:600;color:#999;margin-bottom:0px;">Payment Terms & Other Conditions:</div>
+              <div style="font-size: 12px;color:#999;white-space: pre-line;">
+               {{dataObj.terms_condition}}
+              </div>
+            </td>
+         </tr> 
+
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">             
+            </td>
+         </tr> 
+
+         <tr>
+            <td class="content-block" style="padding: 0 0 20px;">             
+            </td>
+         </tr> 
