@@ -402,7 +402,6 @@ async function loginUser(req, res) {
     const userExits = await User.findOne({ email: req.body.email }).populate(
       "sites"
     );
-
     // Validate user exists
     if (!userExits) return res.status(400).send("email not exit");
 

@@ -15,6 +15,8 @@ const path = require("path");
 const router = express.Router();
 const middleware = require("../middleware");
 const emailCtrl = require(path.resolve(`./controllers/common/email`));
+const multer = require("multer");
+const uploadimage = multer({ storage: multer.memoryStorage() });
 
 // Object to store all loaded controllers
 const controllerObj = {};
@@ -23,7 +25,7 @@ const controllerObj = {};
  * Multer Configuration for File Uploads
  * Configures file storage for uploaded files
  */
-const multer = require("multer");
+// const multer = require("multer");
 
 // Custom storage configuration for file uploads
 const storage = multer.diskStorage({
@@ -1460,6 +1462,44 @@ router.get("/cities", controllerObj.country.getCitiesByState);
 
 // Get city by code (e.g., /api/web/city?code=MH-MUM)
 router.get("/city", controllerObj.country.getCityByCode);
+
+/**
+ * ============================================
+ * ONBOARDING COMPANY ROUTES
+ * ============================================
+ */
+
+router.get(
+  "/onboardingcompany",
+  middleware.jwtVerify,
+  controllerObj.onboardingcompany.getList
+);
+
+router.get(
+  "/onboardingcompany/:id",
+  middleware.jwtVerify,
+  controllerObj.onboardingcompany.getDataByID
+);
+
+router.put(
+  "/onboardingcompany/:id",
+  middleware.jwtVerify,
+  uploadimage.any(),   // OR fields([...])
+  controllerObj.onboardingcompany.updateData
+);
+
+router.post(
+  "/onboardingcompany",
+  middleware.jwtVerify,
+  uploadimage.any(), // 👈 change to any()
+  controllerObj.onboardingcompany.createData
+);
+
+router.delete(
+  "/onboardingcompany/:id",
+  middleware.jwtVerify,
+  controllerObj.onboardingcompany.deleteData
+);
 
 
 // Export router with all configured routes
