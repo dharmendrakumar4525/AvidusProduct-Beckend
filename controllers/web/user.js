@@ -423,7 +423,7 @@ async function loginUser(req, res) {
     // Generate JWT token with user ID and name
     // Note: In production, use environment variable for secret key
     const token = jwt.sign(
-      { id: userExits._id, name: userExits.name,companyId: userExits.companyId },
+      { id: userExits._id, name: userExits.name,companyIdf: userExits.companyId ,isActive:userExits.isActive},
        process.env.JWT_SECRET,
     );
 

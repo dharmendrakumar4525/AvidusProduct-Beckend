@@ -25,7 +25,11 @@ const LocationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany", // must match model name EXACTLY
+        required: true
+        },
     /**
      * Created By
      * User who created the location

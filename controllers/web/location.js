@@ -28,6 +28,8 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+         // Inject only companyId from token
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
