@@ -41,6 +41,11 @@ const config = require("../config/env");
 
 const PurchaseRequestSchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Title
      * Purchase request title

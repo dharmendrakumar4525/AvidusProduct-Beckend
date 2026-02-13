@@ -18,6 +18,11 @@
 const mongoose = require('mongoose');
 
 const subTaskSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * SubTask Name
      * @type {String}

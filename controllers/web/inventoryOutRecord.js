@@ -103,7 +103,7 @@ const { TRANSACTIONAL } = require("../../libs/cacheConfig");
 async function createData(req, res) {
   try {
     // Step 1: Save data in Inventory_Out_Record schema
-    let inventoryOutRecord = new InventoryOutRecord({ ...req.body });
+    let inventoryOutRecord = new InventoryOutRecord({ ...req.body, companyIdf: req.user.companyIdf });
     inventoryOutRecord = await inventoryOutRecord.save();
 
     // Extract data from saved record
@@ -136,6 +136,7 @@ async function createData(req, res) {
             operation: "use",
             inventoryType: type, // Operation is "use" in this context
           },
+          user: req.user,
         },
         { status: () => ({ json: () => {} }) }, // Mocked response object
       );
@@ -164,6 +165,7 @@ async function createData(req, res) {
         useType: "intraSite",
         authorized_person: inventoryOutEntry.authorized_person,
         contractor: inventoryOutEntry.contractor,
+        companyIdf: req.user.companyIdf,
       });
 
       if (!outResponse.success) {
@@ -212,7 +214,7 @@ async function getList(req, res) {
       ? { [sort_by]: sort_order === "desc" ? -1 : 1 }
       : { _id: 1 };
 
-       const cacheKey = `INVENTORY:MATERIALRECORD:LIST:${JSON.stringify(req.query)}`;
+       const cacheKey = `INVENTORY:MATERIALRECORD:LIST:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
             
                 const cached = await getCache(cacheKey);
                 if (cached) {
@@ -220,7 +222,7 @@ async function getList(req, res) {
                   return res.status(200).json(cached);
                 }
     // Construct the match stage for aggregation based on query parameters
-    const matchStage = {};
+    const matchStage = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (siteId) {
       if (!mongoose.Types.ObjectId.isValid(siteId)) {
@@ -334,7 +336,7 @@ async function getEntryNumber(req, res) {
 
   try {
     // Query InventoryOutRecord for the given siteId and sort by entry_number in ascending order
-    const records = await InventoryOutRecord.find({ site: siteId })
+    const records = await InventoryOutRecord.find({ site: siteId, companyIdf: req.user.companyIdf })
       .sort({ entry_number: -1 }) // Sort by entry_number in ascending order
       .exec();
 
@@ -359,7 +361,7 @@ async function getDetails(req, res) {
   //console.log("checking it____________________", req);
   try {
     const id = req.id || req.query.id;
-     const cacheKey = `INVENTORY:MATERIALRECORD:DETAILS:${id}`;
+     const cacheKey = `INVENTORY:MATERIALRECORD:DETAILS:${req.user.companyIdf}:${id}`;
             
                 const cached = await getCache(cacheKey);
                 if (cached) {
@@ -377,6 +379,7 @@ async function getDetails(req, res) {
       {
         $match: {
           _id: ObjectID(id),
+          companyIdf: ObjectID(req.user.companyIdf),
         },
       },
       {

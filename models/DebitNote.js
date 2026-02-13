@@ -17,6 +17,11 @@ const config = require("../config/env");
 
 const debitNoteSchema = new schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Debit Note Number
      * Unique identifier for the debit note

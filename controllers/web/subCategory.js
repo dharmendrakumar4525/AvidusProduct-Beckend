@@ -43,6 +43,7 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
@@ -103,7 +104,8 @@ async function updateData(req, res) {
 
         // Update subcategory and return updated document
         let updatedData = await SubCategorySchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true // Return updated document
         });
@@ -142,17 +144,17 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await SubCategorySchema.findOne({ "_id": ObjectID(_id) });
+        let getData = await SubCategorySchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 
-        const dataRemoved = await SubCategorySchema.deleteOne({ "_id": ObjectID(_id) });
+        const dataRemoved = await SubCategorySchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         await invalidateEntity("subcategory", reqObj._id);
 await invalidateEntityList("subcategory");
 
@@ -194,7 +196,7 @@ async function getDetails(req, res) {
 
     /* ---------- DB ---------- */
     const recordDetail = await SubCategorySchema.aggregate([
-      { $match: { _id: ObjectID(_id) } },
+      { $match: { _id: ObjectID(_id), companyIdf: ObjectID(req.user.companyIdf) } },
       {
         $lookup: {
           from: "categories",
@@ -322,6 +324,7 @@ async function getList(req, res) {
 
     /* ---------------- AGGREGATION ---------------- */
     const records = await SubCategorySchema.aggregate([
+      { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
       {
         $lookup: {
           from: "categories",

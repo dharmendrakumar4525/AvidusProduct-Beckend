@@ -1,0 +1,732 @@
+{
+  "info": {
+    "name": "AvidusProduct Multi-Tenant API",
+    "description": "Complete API collection for AvidusProduct Backend with multi-tenant (companyIdf) scoping.\n\nAll authenticated routes require Bearer token in Authorization header.\nThe JWT token contains companyIdf which is automatically used to scope all queries.\n\n**Setup:**\n1. Run 'Register' then 'Login' to get a JWT token\n2. The token is auto-saved to the {{authToken}} variable\n3. All other requests use this token automatically",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api/web",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"Admin\",\n  \"companyId\": \"{{companyId}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/register", "host": ["{{baseUrl}}"], "path": ["users", "register"] }
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('authToken', jsonData.data.token);",
+                  "    console.log('Token saved to authToken variable');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"langCode\": \"en\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/login", "host": ["{{baseUrl}}"], "path": ["users", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Users List",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["users"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] }
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/:id", "host": ["{{baseUrl}}"], "path": ["users", ":id"], "variable": [{ "key": "id", "value": "" }] }
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"User\",\n  \"phone\": \"9876543210\",\n  \"langCode\": \"en\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated User\",\n  \"phone\": \"9876543210\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/:id", "host": ["{{baseUrl}}"], "path": ["users", ":id"], "variable": [{ "key": "id", "value": "" }] }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/users/:id", "host": ["{{baseUrl}}"], "path": ["users", ":id"], "variable": [{ "key": "id", "value": "" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "About Us",
+      "item": [
+        {
+          "name": "Get About Us List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/aboutUs", "host": ["{{baseUrl}}"], "path": ["aboutUs"] } }
+        },
+        {
+          "name": "Get About Us Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/aboutUs/:id", "host": ["{{baseUrl}}"], "path": ["aboutUs", ":id"], "variable": [{ "key": "id", "value": "" }] } }
+        },
+        {
+          "name": "Create About Us",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"about\": \"Company description here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/aboutUs", "host": ["{{baseUrl}}"], "path": ["aboutUs"] }
+          }
+        },
+        {
+          "name": "Update About Us",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"about\": \"Updated description\"\n}" },
+            "url": { "raw": "{{baseUrl}}/aboutUs/:id", "host": ["{{baseUrl}}"], "path": ["aboutUs", ":id"], "variable": [{ "key": "id", "value": "" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "Get Roles List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/roles?page=1&limit=10&search=&order=asc", "host": ["{{baseUrl}}"], "path": ["roles"], "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "search", "value": "" }, { "key": "order", "value": "asc" }] } }
+        },
+        {
+          "name": "Get Role By ID",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/roles/:id", "host": ["{{baseUrl}}"], "path": ["roles", ":id"], "variable": [{ "key": "id", "value": "" }] } }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"Manager\",\n  \"notifications\": [\"email\", \"sms\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/roles", "host": ["{{baseUrl}}"], "path": ["roles"] }
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"Senior Manager\",\n  \"prevRole\": \"Manager\",\n  \"notifications\": [\"email\", \"sms\", \"push\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/roles/:id", "host": ["{{baseUrl}}"], "path": ["roles", ":id"], "variable": [{ "key": "id", "value": "" }] }
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/roles/:id", "host": ["{{baseUrl}}"], "path": ["roles", ":id"], "variable": [{ "key": "id", "value": "" }] } }
+        },
+        {
+          "name": "Get User Permission",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/user/permission?user_id=", "host": ["{{baseUrl}}"], "path": ["user", "permission"], "query": [{ "key": "user_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Organisation",
+      "item": [
+        {
+          "name": "Get Organisation List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/organisation?page=1&per_page=10&search=", "host": ["{{baseUrl}}"], "path": ["organisation"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "search", "value": "" }] } }
+        },
+        {
+          "name": "Get Organisation Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/organisation/detail?_id=", "host": ["{{baseUrl}}"], "path": ["organisation", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create Organisation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"organisation_name\": \"Test Organisation\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/organisation", "host": ["{{baseUrl}}"], "path": ["organisation"] }
+          }
+        },
+        {
+          "name": "Update Organisation",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"org_id_here\",\n  \"organisation_name\": \"Updated Organisation\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/organisation", "host": ["{{baseUrl}}"], "path": ["organisation"] }
+          }
+        },
+        {
+          "name": "Delete Organisation",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/organisation?_id=", "host": ["{{baseUrl}}"], "path": ["organisation"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Category",
+      "item": [
+        {
+          "name": "Get Category List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/category?page=1&per_page=10&search=", "host": ["{{baseUrl}}"], "path": ["category"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "search", "value": "" }] } }
+        },
+        {
+          "name": "Get Category Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/category/detail?_id=", "host": ["{{baseUrl}}"], "path": ["category", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"category_name\": \"Electronics\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/category", "host": ["{{baseUrl}}"], "path": ["category"] }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"category_id_here\",\n  \"category_name\": \"Updated Category\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/category", "host": ["{{baseUrl}}"], "path": ["category"] }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/category?_id=", "host": ["{{baseUrl}}"], "path": ["category"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "SubCategory",
+      "item": [
+        {
+          "name": "Get SubCategory List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/subcategory?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["subcategory"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get SubCategory Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/subcategory/detail?_id=", "host": ["{{baseUrl}}"], "path": ["subcategory", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create SubCategory",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"subcategory_name\": \"Cables\",\n  \"category\": \"category_id_here\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/subcategory", "host": ["{{baseUrl}}"], "path": ["subcategory"] }
+          }
+        },
+        {
+          "name": "Update SubCategory",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"sub_id_here\",\n  \"subcategory_name\": \"Updated SubCategory\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/subcategory", "host": ["{{baseUrl}}"], "path": ["subcategory"] }
+          }
+        },
+        {
+          "name": "Delete SubCategory",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/subcategory?_id=", "host": ["{{baseUrl}}"], "path": ["subcategory"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Brand",
+      "item": [
+        {
+          "name": "Get Brand List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/brand?page=1&per_page=10&search=", "host": ["{{baseUrl}}"], "path": ["brand"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "search", "value": "" }] } }
+        },
+        {
+          "name": "Get Brand Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/brand/detail?_id=", "host": ["{{baseUrl}}"], "path": ["brand", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create Brand",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"brand_name\": \"Test Brand\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/brand", "host": ["{{baseUrl}}"], "path": ["brand"] }
+          }
+        },
+        {
+          "name": "Update Brand",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"brand_id_here\",\n  \"brand_name\": \"Updated Brand\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/brand", "host": ["{{baseUrl}}"], "path": ["brand"] }
+          }
+        },
+        {
+          "name": "Delete Brand",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/brand?_id=", "host": ["{{baseUrl}}"], "path": ["brand"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "GST",
+      "item": [
+        {
+          "name": "Get GST List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/gst?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["gst"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get GST Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/gst/detail?_id=", "host": ["{{baseUrl}}"], "path": ["gst", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create GST",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"gst_name\": \"GST 18%\",\n  \"gst_percentage\": 18,\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/gst", "host": ["{{baseUrl}}"], "path": ["gst"] }
+          }
+        },
+        {
+          "name": "Update GST",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"gst_id_here\",\n  \"gst_name\": \"Updated GST\",\n  \"gst_percentage\": 28,\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/gst", "host": ["{{baseUrl}}"], "path": ["gst"] }
+          }
+        },
+        {
+          "name": "Delete GST",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/gst?_id=", "host": ["{{baseUrl}}"], "path": ["gst"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "UOM",
+      "item": [
+        {
+          "name": "Get UOM List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/uom?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["uom"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get UOM Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/uom/detail?_id=", "host": ["{{baseUrl}}"], "path": ["uom", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create UOM",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"uom_name\": \"Kilogram\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/uom", "host": ["{{baseUrl}}"], "path": ["uom"] }
+          }
+        },
+        {
+          "name": "Delete UOM",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/uom?_id=", "host": ["{{baseUrl}}"], "path": ["uom"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Site",
+      "item": [
+        {
+          "name": "Get Site List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/site?search=&page=1&per_page=10&order=asc", "host": ["{{baseUrl}}"], "path": ["site"], "query": [{ "key": "search", "value": "" }, { "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "order", "value": "asc" }] } }
+        },
+        {
+          "name": "Get Site Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/site/detail?_id=", "host": ["{{baseUrl}}"], "path": ["site", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create Site",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"site_name\": \"Site Alpha\",\n  \"location\": \"Mumbai\",\n  \"roles\": {\n    \"store_manager\": \"user_id\",\n    \"project_manager\": \"user_id\"\n  },\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/site", "host": ["{{baseUrl}}"], "path": ["site"] }
+          }
+        },
+        {
+          "name": "Update Site",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"site_id_here\",\n  \"site_name\": \"Updated Site\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/site", "host": ["{{baseUrl}}"], "path": ["site"] }
+          }
+        },
+        {
+          "name": "Delete Site",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/site?_id=", "host": ["{{baseUrl}}"], "path": ["site"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Location",
+      "item": [
+        {
+          "name": "Get Location List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/location?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["location"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get Location Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/location/detail?_id=", "host": ["{{baseUrl}}"], "path": ["location", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Create Location",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"location_name\": \"Warehouse A\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/location", "host": ["{{baseUrl}}"], "path": ["location"] }
+          }
+        },
+        {
+          "name": "Delete Location",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/location?_id=", "host": ["{{baseUrl}}"], "path": ["location"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Vendor",
+      "item": [
+        {
+          "name": "Get Vendor List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/vendor?page=1&per_page=10&search=", "host": ["{{baseUrl}}"], "path": ["vendor"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "search", "value": "" }] } }
+        },
+        {
+          "name": "Get Vendor Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/vendor/detail?_id=", "host": ["{{baseUrl}}"], "path": ["vendor", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Get Next Vendor Code",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/vendorCode", "host": ["{{baseUrl}}"], "path": ["vendorCode"] } }
+        },
+        {
+          "name": "Create Vendor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vendor_name\": \"ABC Suppliers\",\n  \"contact_person\": \"John\",\n  \"phone_number\": \"9876543210\",\n  \"email\": \"vendor@example.com\",\n  \"pan_number\": \"ABCDE1234F\",\n  \"gst_number\": \"27ABCDE1234F1Z5\",\n  \"vendor_type\": \"Manufacturer\",\n  \"scope\": \"National(Nv)\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/vendor", "host": ["{{baseUrl}}"], "path": ["vendor"] }
+          }
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"_id\": \"vendor_id_here\",\n  \"vendor_name\": \"Updated Vendor\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/vendor", "host": ["{{baseUrl}}"], "path": ["vendor"] }
+          }
+        },
+        {
+          "name": "Delete Vendor",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/vendor?_id=", "host": ["{{baseUrl}}"], "path": ["vendor"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Item",
+      "item": [
+        {
+          "name": "Get Item List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/item?page=1&per_page=10&search=", "host": ["{{baseUrl}}"], "path": ["item"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "search", "value": "" }] } }
+        },
+        {
+          "name": "Get Item Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/item/detail?_id=", "host": ["{{baseUrl}}"], "path": ["item", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Get Next Item Number",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/item/getItemNumber", "host": ["{{baseUrl}}"], "path": ["item", "getItemNumber"] } }
+        },
+        {
+          "name": "Create Item",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"item_name\": \"Steel Rod\",\n  \"category\": \"category_id\",\n  \"sub_category\": \"subcategory_id\",\n  \"uom\": [\"uom_id\"],\n  \"gst\": \"gst_id\",\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/item", "host": ["{{baseUrl}}"], "path": ["item"] }
+          }
+        },
+        {
+          "name": "Delete Item",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/item?_id=", "host": ["{{baseUrl}}"], "path": ["item"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Contractor",
+      "item": [
+        {
+          "name": "Get Contractor List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/contractor?page=1&per_page=10&search=", "host": ["{{baseUrl}}"], "path": ["contractor"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }, { "key": "search", "value": "" }] } }
+        },
+        {
+          "name": "Create Contractor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"ABC Contractors\",\n  \"email\": \"contractor@example.com\",\n  \"phone\": \"9876543210\",\n  \"Contact_Person\": \"John Doe\",\n  \"NatureOfWork\": \"Civil\",\n  \"type\": \"Main\",\n  \"location\": \"Mumbai\",\n  \"langCode\": \"en\"\n}" },
+            "url": { "raw": "{{baseUrl}}/contractor", "host": ["{{baseUrl}}"], "path": ["contractor"] }
+          }
+        },
+        {
+          "name": "Delete Contractor",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/contractor?_id=", "host": ["{{baseUrl}}"], "path": ["contractor"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Purchase Request",
+      "item": [
+        {
+          "name": "Get PR List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/purchase-request?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["purchase-request"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get PR Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/purchase-request/detail?_id=", "host": ["{{baseUrl}}"], "path": ["purchase-request", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Get PR Status",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/purchase-request-status/", "host": ["{{baseUrl}}"], "path": ["purchase-request-status", ""] } }
+        },
+        {
+          "name": "Delete PR",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/purchase-request?_id=", "host": ["{{baseUrl}}"], "path": ["purchase-request"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Rate Approval",
+      "item": [
+        {
+          "name": "Get Rate Approval List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/rate-approval?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["rate-approval"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get Rate Approval Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/rate-approval/detail?_id=", "host": ["{{baseUrl}}"], "path": ["rate-approval", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Get Pending Rate Approvals",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/pending-rate-approval", "host": ["{{baseUrl}}"], "path": ["pending-rate-approval"] } }
+        },
+        {
+          "name": "Get Rate Approval Stats",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/rate-approval-count/", "host": ["{{baseUrl}}"], "path": ["rate-approval-count", ""] } }
+        }
+      ]
+    },
+    {
+      "name": "Purchase Order",
+      "item": [
+        {
+          "name": "Get PO List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/purchase_order?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["purchase_order"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get PO Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/purchase_order/detail?_id=", "host": ["{{baseUrl}}"], "path": ["purchase_order", "detail"], "query": [{ "key": "_id", "value": "" }] } }
+        },
+        {
+          "name": "Get PO Number",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/getPONumber", "host": ["{{baseUrl}}"], "path": ["getPONumber"] } }
+        },
+        {
+          "name": "Get PO Status Count",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/getPOStatusCount", "host": ["{{baseUrl}}"], "path": ["getPOStatusCount"] } }
+        },
+        {
+          "name": "Delete PO",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/purchase_order?_id=", "host": ["{{baseUrl}}"], "path": ["purchase_order"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "DMR",
+      "item": [
+        {
+          "name": "Get DMR List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/dmr_list?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["dmr_list"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get DMR PO List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/dmr_purchase_order?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["dmr_purchase_order"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get DMR Entry Number",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/getDMRNumber", "host": ["{{baseUrl}}"], "path": ["getDMRNumber"] } }
+        },
+        {
+          "name": "Get DMR Status Count",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/dmr_entry_status", "host": ["{{baseUrl}}"], "path": ["dmr_entry_status"] } }
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Get Inventory Data",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/inventory?siteId=&page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["inventory"], "query": [{ "key": "siteId", "value": "" }, { "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get Inventory Report",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/inventory-report?siteId=&page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["inventory-report"], "query": [{ "key": "siteId", "value": "" }, { "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Create Material Issue Slip",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"siteId\": \"site_id_here\",\n  \"items\": [],\n  \"langCode\": \"en\",\n  \"login_user_id\": \"user_id_here\"\n}" },
+            "url": { "raw": "{{baseUrl}}/material_issue_slip", "host": ["{{baseUrl}}"], "path": ["material_issue_slip"] }
+          }
+        },
+        {
+          "name": "Get Issue Slip Number",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/issue-slip-number?siteId=", "host": ["{{baseUrl}}"], "path": ["issue-slip-number"], "query": [{ "key": "siteId", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Inventory Transfer",
+      "item": [
+        {
+          "name": "Create Transfer Request",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"originSiteId\": \"site_id_from\",\n  \"destinationSiteId\": \"site_id_to\",\n  \"items\": [],\n  \"langCode\": \"en\"\n}" },
+            "url": { "raw": "{{baseUrl}}/inventory-transfer/create_request", "host": ["{{baseUrl}}"], "path": ["inventory-transfer", "create_request"] }
+          }
+        },
+        {
+          "name": "Get Transfer List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/inventory-transfer?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["inventory-transfer"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get Transfer Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/inventory-transfer/details?_id=", "host": ["{{baseUrl}}"], "path": ["inventory-transfer", "details"], "query": [{ "key": "_id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Project",
+      "item": [
+        {
+          "name": "Get Project List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/projects", "host": ["{{baseUrl}}"], "path": ["projects"] } }
+        },
+        {
+          "name": "Get Project Details",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/projects/:id", "host": ["{{baseUrl}}"], "path": ["projects", ":id"], "variable": [{ "key": "id", "value": "" }] } }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"projectName\": \"New Project\",\n  \"projectDate\": \"2025-01-01\",\n  \"location\": \"Mumbai\",\n  \"members\": []\n}" },
+            "url": { "raw": "{{baseUrl}}/projects", "host": ["{{baseUrl}}"], "path": ["projects"] }
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/projects/:id", "host": ["{{baseUrl}}"], "path": ["projects", ":id"], "variable": [{ "key": "id", "value": "" }] } }
+        }
+      ]
+    },
+    {
+      "name": "Debit Note",
+      "item": [
+        {
+          "name": "Get Debit Note List",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/debitNote?page=1&per_page=10", "host": ["{{baseUrl}}"], "path": ["debitNote"], "query": [{ "key": "page", "value": "1" }, { "key": "per_page", "value": "10" }] } }
+        },
+        {
+          "name": "Get Eligible Invoices for Debit Note",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/debitNote/open-debit-invoices", "host": ["{{baseUrl}}"], "path": ["debitNote", "open-debit-invoices"] } }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/dasboard-stats", "host": ["{{baseUrl}}"], "path": ["dasboard-stats"] } }
+        }
+      ]
+    }
+  ]
+}

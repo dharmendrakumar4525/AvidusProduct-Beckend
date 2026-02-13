@@ -13,6 +13,11 @@ const schema = mongoose.Schema;
 
 const creditNoteSchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Credit Note Number
      * Unique identifier for the credit note (provided by vendor)

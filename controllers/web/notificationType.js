@@ -73,6 +73,7 @@ async function createData(req, res) {
       let savedNotifications = await Promise.all(
         notifications.map(async (data) => {
           try {
+            data.companyIdf = req.user.companyIdf;
             return await new NotificationTypeSchema(data).save();
           } catch (error) {
             return { error, data }; // Return error for failed saves
@@ -132,6 +133,7 @@ async function updateData(req, res) {
     let updatedData = await NotificationTypeSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -187,7 +189,7 @@ async function deleteData(req, res) {
       };
     }
 
-    let getData = await NotificationTypeSchema.findOne({ _id: ObjectID(_id) });
+    let getData = await NotificationTypeSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!getData) {
       throw {
@@ -197,7 +199,7 @@ async function deleteData(req, res) {
       };
     }
 
-    const dataRemoved = await NotificationTypeSchema.deleteOne({ _id: ObjectID(_id) });
+    const dataRemoved = await NotificationTypeSchema.deleteOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     res
       .status(200)
@@ -235,7 +237,7 @@ async function getDetails(req, res) {
       };
     }
 
-    const recordDetail = await NotificationTypeSchema.findOne({ _id: ObjectID(_id) });
+    const recordDetail = await NotificationTypeSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (recordDetail) {
       res
@@ -308,6 +310,9 @@ async function getList(req, res) {
     if (hasPagination) {
       const allRecords = await NotificationTypeSchema.aggregate([
         {
+          $match: { companyIdf: ObjectID(req.user.companyIdf) },
+        },
+        {
           $facet: {
             data: [
               { $sort: sort },
@@ -329,7 +334,7 @@ async function getList(req, res) {
 
     // ---------------- NON-PAGINATED ----------------
     else {
-      const allRecords = await NotificationTypeSchema.find({}).lean();
+      const allRecords = await NotificationTypeSchema.find({ companyIdf: req.user.companyIdf }).lean();
 
       response = await Response.success(
         allRecords,

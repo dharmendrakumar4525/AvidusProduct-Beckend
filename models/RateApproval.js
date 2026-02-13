@@ -45,6 +45,11 @@ const schema = mongoose.Schema;
 const config = require('../config/env');
 
 const RateApprovalSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
 
     /**
      * Rate Approval Number

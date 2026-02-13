@@ -173,10 +173,11 @@ async function createData(req, res) {
     });
 
     //console.log("checking________________", reqObj);
+    reqObj.companyIdf = req.user.companyIdf;
     let newData = await new PurchaseRequest(reqObj).save();
 
     /* Update numbering group */
-    await updateNextNumberGroupId("", "purchase_request");
+    await updateNextNumberGroupId("", "purchase_request", req.user.companyIdf);
 
     if (newData) {
       //const site = await SiteSchema.findById(ObjectID(newData.site)).populate("roles.store_manager roles.project_manager roles.project_director");
@@ -232,7 +233,7 @@ async function updateData(req, res) {
     }
 
     if (reqObj.status && reqObj.status == "approved") {
-      let isVendorExists = await checkVendorCount();
+      let isVendorExists = await checkVendorCount(req.user.companyIdf);
       if (!isVendorExists) {
         throw {
           errors: [],
@@ -303,7 +304,7 @@ async function updateData(req, res) {
       });
     }
 
-    const existingPR = await PurchaseRequest.findById(reqObj._id).lean();
+    const existingPR = await PurchaseRequest.findOne({ _id: reqObj._id, companyIdf: req.user.companyIdf }).lean();
 
     let prHistory = Array.isArray(existingPR.prHistory)
       ? [...existingPR.prHistory]
@@ -391,6 +392,7 @@ async function updateData(req, res) {
     let updatedData = await PurchaseRequest.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       { $set: requestedData },
       {
@@ -546,7 +548,7 @@ async function getList(req, res) {
       : { created_at: -1 };
 
     // Filters
-    const filterRequest = {};
+    const filterRequest = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (filter_by && filter_value) filterRequest[filter_by] = filter_value;
 
@@ -766,7 +768,7 @@ async function getDetails(req, res) {
     }
 
     let recordDetail = await PurchaseRequest.aggregate([
-      { $match: { _id: ObjectID(_id) } },
+      { $match: { _id: ObjectID(_id), companyIdf: ObjectID(req.user.companyIdf) } },
 
       { $unwind: "$items" },
 
@@ -956,7 +958,7 @@ async function deleteData(req, res) {
       };
     }
     let record = await PurchaseRequest.findOneAndDelete({
-      company_id: company_id,
+      companyIdf: req.user.companyIdf,
       _id: ObjectID(_id),
     });
 
@@ -1011,7 +1013,7 @@ async function getLocalRateApprovals(req, res) {
       return res.status(200).json(cached);
     }
 
-    const filter = { "purchaseRateApproval.status": status };
+    const filter = { "purchaseRateApproval.status": status, companyIdf: ObjectID(req.user.companyIdf) };
     filter.status = { $in: ["pending", "approved"] };
 
     // Apply site filter if provided
@@ -1153,6 +1155,7 @@ async function getPurchaseRequestList(req, res) {
     // Find all purchase requests for the given site
     const purchaseRequests = await PurchaseRequest.find({
       site: siteId,
+      companyIdf: req.user.companyIdf,
       status: { $ne: "draft" }, // Exclude documents with status "draft"
     })
       .sort({ purchase_request_number: -1 })
@@ -1213,7 +1216,7 @@ async function getLocalPurchaseCounts(req, res) {
       return res.status(200).json(cached);
     }
 
-    let filter = {};
+    let filter = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (title?.trim()) {
       filter.title = { $regex: title, $options: "i" };
@@ -1373,7 +1376,7 @@ async function getPurchaseRequestStatus(req, res) {
       return res.status(200).json(cached);
     }
 
-    let filter = {};
+    let filter = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (title?.trim()) {
       filter.title = { $regex: title, $options: "i" };
@@ -1626,7 +1629,7 @@ async function EditApprovedData(req, res) {
       item.attachment = [...attachments, ...fileLinks];
     });
 
-    const existingPR = await PurchaseRequest.findById(reqObj._id).lean();
+    const existingPR = await PurchaseRequest.findOne({ _id: reqObj._id, companyIdf: req.user.companyIdf }).lean();
 
     let prHistory = Array.isArray(existingPR.prHistory)
       ? [...existingPR.prHistory]
@@ -1647,6 +1650,7 @@ async function EditApprovedData(req, res) {
     let updatedData = await PurchaseRequest.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       { $set: requestedData },
       {
@@ -1664,6 +1668,7 @@ async function EditApprovedData(req, res) {
         await RateApprovalSchema.deleteOne({
           site: ObjectID(updatedData.site),
           purchase_request_number: updatedData.purchase_request_number,
+          companyIdf: req.user.companyIdf,
         });
 
         await addRateApproval(
@@ -1726,7 +1731,7 @@ async function RejectApprovedPR(req, res) {
   //console.log(id, login_user_id, "Reject Approved PR Request");
   try {
     // Check if the Purchase Request exists
-    const purchaseRequest = await PurchaseRequest.findById(ObjectID(id));
+    const purchaseRequest = await PurchaseRequest.findOne({ _id: ObjectID(id), companyIdf: req.user.companyIdf });
     if (!purchaseRequest) {
       return res.status(404).json({ message: "Purchase Request not found." });
     }
@@ -1734,6 +1739,7 @@ async function RejectApprovedPR(req, res) {
     // Check if the Rate Approval exists and its purchase_request_numbers are blank
     const rateApproval = await RateApprovalSchema.findOne({
       purchase_request_id: ObjectID(id),
+      companyIdf: req.user.companyIdf,
     });
     if (
       rateApproval &&
@@ -1750,6 +1756,7 @@ async function RejectApprovedPR(req, res) {
     if (rateApproval) {
       const purchaseOrders = await PurchaseOrderSchema.find({
         rate_approval_id: ObjectID(rateApproval._id),
+        companyIdf: req.user.companyIdf,
       });
       const hasNonBlankOrders = purchaseOrders.some(
         (po) =>
@@ -1767,7 +1774,7 @@ async function RejectApprovedPR(req, res) {
 
       // Mark all linked Purchase Orders as rejected if they exist
       await PurchaseOrderSchema.updateMany(
-        { rate_approval_id: rateApproval._id },
+        { rate_approval_id: rateApproval._id, companyIdf: req.user.companyIdf },
         { status: "rejected" }
       );
 
@@ -1776,7 +1783,7 @@ async function RejectApprovedPR(req, res) {
       await rateApproval.save();
     }
 
-    const existingPR = await PurchaseRequest.findById(id).lean();
+    const existingPR = await PurchaseRequest.findOne({ _id: id, companyIdf: req.user.companyIdf }).lean();
 
     let prHistory = Array.isArray(existingPR.prHistory)
       ? [...existingPR.prHistory]
@@ -1795,7 +1802,7 @@ async function RejectApprovedPR(req, res) {
     // Update the status of the Purchase Request to rejected
 
     await PurchaseRequest.updateOne(
-      { _id: id },
+      { _id: id, companyIdf: req.user.companyIdf },
       { $set: { status: "rejected", prHistory: prHistory } }
     );
 
@@ -2334,7 +2341,7 @@ async function getPRWithLinkedData(req, res) {
     }
 
     const purchaseRequestAgg = await PurchaseRequest.aggregate([
-      { $match: { _id: _id } },
+      { $match: { _id: _id, companyIdf: ObjectID(req.user.companyIdf) } },
       {
         $lookup: {
           from: "sites",
@@ -2480,6 +2487,7 @@ async function getPRWithLinkedData(req, res) {
     // -------------------------------------------
 
     const baseFilter = {
+      companyIdf: req.user.companyIdf,
       $or: [
         { purchase_request_id: _id },
         { mergedPR: { $elemMatch: { purchase_request_id: _id } } },
@@ -2487,6 +2495,7 @@ async function getPRWithLinkedData(req, res) {
     };
 
     const poFilter = {
+      companyIdf: req.user.companyIdf,
       site: purchaseRequest.site,
       $or: [
         { purchase_request_number: purchaseRequest.purchase_request_number },

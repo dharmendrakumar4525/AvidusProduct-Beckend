@@ -28,6 +28,11 @@ const schema = mongoose.Schema;
 const config = require("../config/env");
 
 const InventoryOutSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Item ID
      * Reference to the item

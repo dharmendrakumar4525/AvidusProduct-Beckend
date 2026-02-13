@@ -15,6 +15,11 @@ const schema = mongoose.Schema;
 const config = require('../config/env');
 
 const NumberingGroupSchema = new schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Next ID
      * Next available ID number for the module

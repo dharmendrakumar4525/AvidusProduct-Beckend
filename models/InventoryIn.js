@@ -38,6 +38,11 @@ const InventoryTypes = {
 
 const Site_InventorySchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Item ID
      * Reference to the item

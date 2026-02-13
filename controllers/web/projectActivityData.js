@@ -62,6 +62,7 @@ async function createData(req, res) {
         let reqObj = req.body;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
+        reqObj.companyIdf = req.user.companyIdf;
 
         // Validate all required fields
         if (!(reqObj.project_id && reqObj.activity_id && reqObj.activity_ref_id && 
@@ -92,6 +93,7 @@ async function createData(req, res) {
         // Check if activity data already exists for this date
         let getDetail = await ProjectActivityDataSchema.findOne({
             ...detailRequestData,
+            companyIdf: req.user.companyIdf,
             date: {
                 $gte: startDateFormat,
                 $lt: endDateFormat
@@ -118,7 +120,8 @@ async function createData(req, res) {
             }
 
             let updatedData = await ProjectActivityDataSchema.findOneAndUpdate({
-                _id: ObjectID(getDetail._id)
+                _id: ObjectID(getDetail._id),
+                companyIdf: req.user.companyIdf,
             }, updatRequestData, {
                 new: true
             });
@@ -177,7 +180,8 @@ async function updateData(req, res) {
         let requestedData = { ...reqObj, ...{ updated_by: loginUserId } };
 
         let updatedData = await ProjectActivityDataSchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf,
         }, requestedData, {
             new: true
         });
@@ -217,7 +221,7 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await ProjectActivityDataSchema.findOne({ "_id": ObjectID(_id) });
+        let getData = await ProjectActivityDataSchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
@@ -227,7 +231,7 @@ async function deleteData(req, res) {
             }
         }
 
-        const dataRemoved = await ProjectActivityDataSchema.deleteOne({ "_id": ObjectID(_id) });
+        const dataRemoved = await ProjectActivityDataSchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         res.status(200).json(await Response.success({}, responseMessage(reqObj.langCode, 'RECORD_DELETED'), req));
 
@@ -264,6 +268,7 @@ async function getDetails(req, res) {
         if (_id) {
             requestedData['_id'] = ObjectID(_id)
         }
+        requestedData['companyIdf'] = req.user.companyIdf;
 
         const recordDetail = await ProjectActivityDataSchema.findOne(requestedData);
 
@@ -307,6 +312,9 @@ async function getList(req, res) {
 
             let allRecords = await ProjectActivityDataSchema.aggregate([
                 {
+                    $match: { companyIdf: ObjectID(req.user.companyIdf) },
+                },
+                {
                     $facet: {
                         data: [
 
@@ -321,7 +329,7 @@ async function getList(req, res) {
             res.status(200).json(await Response.pagination(allRecords, responseMessage(reqObj.langCode, 'SUCCESS'), pageData, req));
 
         } else {
-            let requestedData = {};
+            let requestedData = { companyIdf: req.user.companyIdf };
             if (project_id) {
                 requestedData['project_id'] = ObjectID(project_id)
             }
@@ -346,7 +354,7 @@ async function getRemarks(req, res) {
 
     try {
         let { activity_id } = req.query;
-        let allRecords = await ProjectActivityDataSchema.find({ activity_ref_id: activity_id });
+        let allRecords = await ProjectActivityDataSchema.find({ activity_ref_id: activity_id, companyIdf: req.user.companyIdf });
         res.status(200).json(await Response.success(allRecords, responseMessage(req.body.langCode, 'SUCCESS'), req));
 
 

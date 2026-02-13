@@ -33,6 +33,11 @@ const config = require("../config/env");
 
 const TransferSchema = new Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Transfer Number
      * Auto-generated unique transfer number (e.g., MTN_SITE_00001)

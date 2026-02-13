@@ -13,6 +13,11 @@ const mongoose = require('mongoose');
 const config = require('../config/env');
 
 const OrganisationSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // Organisation identification
     companyName: {
         type: String,

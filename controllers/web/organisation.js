@@ -42,6 +42,7 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
@@ -102,7 +103,8 @@ async function updateData(req, res) {
 
         // Update organisation and return updated document
         let updatedData = await OrganisationSchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true // Return updated document
         });
@@ -141,19 +143,19 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await OrganisationSchema.findOne({ "_id": ObjectID(_id)});
+        let getData = await OrganisationSchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 await invalidateEntity("organisation");
 await invalidateEntityList("organisation");
 
-        const dataRemoved = await OrganisationSchema.deleteOne({ "_id": ObjectID(_id)});
+        const dataRemoved = await OrganisationSchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         
         res.status(200).json(await Response.success({}, responseMessage(reqObj.langCode,'RECORD_DELETED'),req));
 
@@ -202,7 +204,8 @@ async function getDetails(req, res) {
 
     // 🔹 Fetch from DB
     const recordDetail = await OrganisationSchema.findOne({
-      _id: ObjectID(_id)
+      _id: ObjectID(_id),
+      companyIdf: req.user.companyIdf
     }).lean();
 
     if (!recordDetail) {
@@ -263,11 +266,9 @@ async function getList(req, res) {
     const hasPagination = page > 0 && per_page > 0;
 
     // 🔹 Build search query
-    let matchQuery = {};
+    let matchQuery = { companyIdf: req.user.companyIdf };
     if (search) {
-      matchQuery = {
-        companyName: { $regex: search, $options: "i" }
-      };
+      matchQuery.companyName = { $regex: search, $options: "i" };
     }
 
     // 🔹 Sorting

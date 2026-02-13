@@ -58,6 +58,7 @@ const createData = async (req, res) => {
 
     // Create credit note record
     const creditNote = await CreditNote.create({
+      companyIdf: req.user.companyIdf,
       creditNoteNumber,
       creditNoteDate,
       creditNoteAmount,
@@ -85,6 +86,7 @@ const createData = async (req, res) => {
         _id: { $in: debitNoteId },
         vendorId,
         site,
+        companyIdf: req.user.companyIdf,
         status: { $ne: "settled" }, // Exclude already settled debit notes
       }).sort({ createdAt: 1 }); // Sort by creation date (oldest first)
     } else {
@@ -93,6 +95,7 @@ const createData = async (req, res) => {
       debitNotesToSettle = await DebitNote.find({
         vendorId,
         site,
+        companyIdf: req.user.companyIdf,
         status: { $ne: "settled" }, // Get pending or partial debit notes
       }).sort({ createdAt: 1 }); // Oldest first (FIFO)
     }

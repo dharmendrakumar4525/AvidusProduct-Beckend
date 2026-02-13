@@ -64,12 +64,13 @@ async function createData(req, res) {
     reqObj.created_by = reqObj.login_user_id;
     reqObj.updated_by = reqObj.login_user_id;
 
+    reqObj.companyIdf = req.user.companyIdf;
     const { pan_number, gst_number, langCode } = reqObj;
     let existingVendorWithGST;
     
     // Step 1: Check if GST number already exists (if provided)
     if (gst_number !== "") {
-      existingVendorWithGST = await VendorSchema.findOne({ gst_number });
+      existingVendorWithGST = await VendorSchema.findOne({ gst_number, companyIdf: req.user.companyIdf });
       if (existingVendorWithGST) {
         throw {
           errors: [],
@@ -80,7 +81,7 @@ async function createData(req, res) {
     }
 
     // Step 2: Check if PAN number already exists
-    const existingVendorWithPAN = await VendorSchema.findOne({ pan_number });
+    const existingVendorWithPAN = await VendorSchema.findOne({ pan_number, companyIdf: req.user.companyIdf });
     if (existingVendorWithPAN) {
       // Case 1: PAN is duplicate and GST is blank
       if (!gst_number) {
@@ -170,6 +171,7 @@ async function updateData(req, res) {
       existingVendorWithGST = await VendorSchema.findOne({
         gst_number,
         _id: { $ne: ObjectID(_id) }, // Exclude the current vendor's ID
+        companyIdf: req.user.companyIdf,
       });
 
       if (existingVendorWithGST) {
@@ -185,6 +187,7 @@ async function updateData(req, res) {
     const existingVendorWithPAN = await VendorSchema.findOne({
       pan_number,
       _id: { $ne: _id },
+      companyIdf: req.user.companyIdf,
     });
 
     if (existingVendorWithPAN) {
@@ -209,7 +212,7 @@ async function updateData(req, res) {
 
     // Step 3: If no conflicts, proceed to update the vendor data
     const updatedData = await VendorSchema.findOneAndUpdate(
-      { _id: ObjectID(_id) },
+      { _id: ObjectID(_id), companyIdf: req.user.companyIdf },
       requestedData,
       { new: true } // Return updated document
     );
@@ -278,7 +281,7 @@ async function deleteData(req, res) {
     }
 
     // Check if vendor exists
-    let getData = await VendorSchema.findOne({ _id: ObjectID(_id) });
+    let getData = await VendorSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!getData) {
       throw {
@@ -289,7 +292,7 @@ async function deleteData(req, res) {
     }
 
     // Delete vendor
-    const dataRemoved = await VendorSchema.deleteOne({ _id: ObjectID(_id) });
+    const dataRemoved = await VendorSchema.deleteOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
     
     // Invalidate cache for this vendor and vendor list
     await invalidateEntity("vendor");
@@ -354,7 +357,7 @@ async function getDetails(req, res) {
     }
 
     let recordDetail = await VendorSchema.aggregate([
-      { $match: { _id: ObjectID(_id) } },
+      { $match: { _id: ObjectID(_id), companyIdf: ObjectID(req.user.companyIdf) } },
       {
         $lookup: {
           from: "categories",
@@ -459,7 +462,7 @@ async function getDetails(req, res) {
 async function getVendorCode(req, res) {
   try {
     // Find the vendor with the highest code
-    const lastVendor = await VendorSchema.findOne().sort({ code: -1 }).limit(1);
+    const lastVendor = await VendorSchema.findOne({ companyIdf: req.user.companyIdf }).sort({ code: -1 }).limit(1);
 
     const nextCode = lastVendor ? lastVendor.code + 1 : 1; // Start from 1 if no vendor exists
 
@@ -503,7 +506,7 @@ async function getList(req, res) {
     sort[sort_by] = sort_order === "desc" ? -1 : 1;
 
     // Search filter
-    const matchFilter = {};
+    const matchFilter = { companyIdf: ObjectID(req.user.companyIdf) };
     if (search) {
       matchFilter.vendor_name = { $regex: search, $options: "i" };
     }

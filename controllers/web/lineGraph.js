@@ -37,7 +37,8 @@ async function createData(req, res) {
                             $lte: new Date(req.body.date) // All entries up to this date
                         }
                     },
-                    { projectId: req.body.projectId } // Filter by project
+                    { projectId: req.body.projectId }, // Filter by project
+                    { companyIdf: req.user.companyIdf }
                 ]
             }
         );
@@ -70,7 +71,7 @@ async function createData(req, res) {
  */
 async function getList(req, res) {
     try {
-        const lineGraph = await LineGraph.find();
+        const lineGraph = await LineGraph.find({ companyIdf: req.user.companyIdf });
         res.send(lineGraph);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -94,7 +95,7 @@ async function getList(req, res) {
 async function getDetails(req, res) {
     try {
         // Find all line graph entries for the project
-        const lineGraph = await LineGraph.find({ projectId: req.params.id });
+        const lineGraph = await LineGraph.find({ projectId: req.params.id, companyIdf: req.user.companyIdf });
         
         if (!lineGraph) return res.send('no lineGraph exits');
         

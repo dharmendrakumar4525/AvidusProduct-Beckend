@@ -34,6 +34,7 @@ async function createData(req, res) {
 
         // Create new about us record
         let aboutUs = new AboutUs({
+            companyIdf: req.user.companyIdf,
             description: reqObj.about
         });
         aboutUs = await aboutUs.save();
@@ -42,6 +43,7 @@ async function createData(req, res) {
 
         // Log activity
         let recentActivity = new RecentActivity({
+            companyIdf: req.user.companyIdf,
             description: `about us information updated`
         });
         recentActivity = await recentActivity.save();
@@ -72,12 +74,13 @@ async function updateData(req, res) {
         let reqObj = req.body;
 
         // Update about us content
-        const about = await AboutUs.findByIdAndUpdate(id, {
+        const about = await AboutUs.findOneAndUpdate({ _id: id, companyIdf: req.user.companyIdf }, {
             description: reqObj.about,
         }, { new: true });
 
         // Log activity
         let recentActivity = new RecentActivity({
+            companyIdf: req.user.companyIdf,
             description: `about us information updated`
         });
         recentActivity = await recentActivity.save();
@@ -102,7 +105,7 @@ async function updateData(req, res) {
 async function getList(req, res) {
     try {
         let reqObj = req.body;
-        const aboutUs = await AboutUs.find({});
+        const aboutUs = await AboutUs.find({ companyIdf: req.user.companyIdf });
         res.send(aboutUs);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -127,7 +130,7 @@ async function getDetails(req, res) {
     try {
         let reqObj = req.params;
 
-        const aboutUs = await AboutUs.findById(reqObj.id);
+        const aboutUs = await AboutUs.findOne({ _id: reqObj.id, companyIdf: req.user.companyIdf });
 
         if (!aboutUs) return res.send('no aboutUs exits');
 

@@ -87,8 +87,8 @@ async function updateData(req, res) {
     let requestedData = { ...reqObj, ...{ updated_by: loginUserId } };
     
     // Fetch existing PO to get history
-    const existingPR = await PurchaseOrderSchema.findById(
-      requestedData._id
+    const existingPR = await PurchaseOrderSchema.findOne(
+      { _id: requestedData._id, companyIdf: req.user.companyIdf }
     ).lean();
 
     // Get existing history or initialize empty array
@@ -138,6 +138,7 @@ async function updateData(req, res) {
     let updatedData = await PurchaseOrderSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -354,7 +355,7 @@ async function getList(req, res) {
     }
 
     // Filters
-    const filterRequest = {};
+    const filterRequest = { companyIdf: ObjectID(req.user.companyIdf) };
     if (filter_by && filter_value) filterRequest[filter_by] = filter_value;
     if (prType) filterRequest.prType = prType;
     if (purchase_type) filterRequest.local_purchase = purchase_type;
@@ -544,7 +545,7 @@ async function getDetails(req, res) {
 
 
     // Step 1: Fetch the PO
-    let po = await PurchaseOrderSchema.findOne({ _id: ObjectID(_id) }).lean();
+    let po = await PurchaseOrderSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf }).lean();
     if (!po) {
       return res
         .status(422)
@@ -738,6 +739,7 @@ async function deleteData(req, res) {
     }
     let record = await PurchaseOrderSchema.findOneAndDelete({
       _id: ObjectID(_id),
+      companyIdf: req.user.companyIdf,
     });
 
     // Invalidate cache for this PO and PO list
@@ -790,7 +792,7 @@ async function updateRevisedOrder(req, res) {
 
     // Find and update the document
     const updatedData = await PurchaseOrderSchema.findOneAndUpdate(
-      { po_number }, // Query by `po_number`
+      { po_number, companyIdf: req.user.companyIdf }, // Query by `po_number`
       updateFields, // Update with `status`, `revisionRemarks`, and `revisionRequestedBy`
       { new: true } // Return the updated document
     );
@@ -847,6 +849,7 @@ async function getPONumber(req, res) {
     // Fetch POs that are not pending and match the site
     const poList = await PurchaseOrderSchema.find({
       site: ObjectID(siteId),
+      companyIdf: req.user.companyIdf,
       prType: { $ne: "Plant & Machinery" }, // Exclude "Plant & Machinery"
       "billing_address.gst_number": gst_number,
       status: { $ne: "pending" },
@@ -890,6 +893,7 @@ async function getPlantMachineryPONumber(req, res) {
     // Fetch POs that are not pending and match the site
     const poList = await PurchaseOrderSchema.find({
       prType: "Plant & Machinery",
+      companyIdf: req.user.companyIdf,
       status: { $ne: "pending" },
     }).select("po_number");
 
@@ -927,6 +931,7 @@ async function getUniqueVendorsBySiteId(req, res) {
     const purchaseOrders = await PurchaseOrderSchema.find(
       {
         site: ObjectID(siteId),
+        companyIdf: req.user.companyIdf,
         order_Type: order_Type,
         local_purchase: "no",
         status: { $in: ["pending"] },
@@ -980,6 +985,7 @@ async function getPendingPOByVendorID(req, res) {
 
     let query = {
       site: ObjectID(siteId),
+      companyIdf: req.user.companyIdf,
       order_Type: order_Type,
       prType: prType,
       status: { $in: ["pending"] },
@@ -1010,6 +1016,7 @@ async function getApprovedPOByVendorID(req, res) {
 
     let query = {
       site: ObjectID(siteId),
+      companyIdf: req.user.companyIdf,
       order_Type: order_Type,
       prType: prType,
       status: { $in: ["approved", "revised"] },
@@ -1054,7 +1061,7 @@ async function getPoStatusCount(req, res) {
       return res.status(200).json(cachedData);
     }
 
-    let filterRequest = {};
+    let filterRequest = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (site) {
       filterRequest.site = new ObjectID(site);
@@ -1217,7 +1224,7 @@ async function getPoStatusDashboardCount(req, res) {
     if (cached) return res.status(200).json(cached);
 
     // ---- Build match criteria ----
-    const match = {};
+    const match = { companyIdf: ObjectID(req.user.companyIdf) };
 
     // If site is given, use it directly
     if (site?.trim()) {
@@ -1324,10 +1331,12 @@ async function getMergedPurchaseOrders(req, res) {
     // Fetch all the purchase orders by given IDs
     const purchaseOrders = await PurchaseOrderSchema.find({
       _id: { $in: ids.map((id) => ObjectID(id)) },
+      companyIdf: req.user.companyIdf,
     });
 
     const approvedOrder = await PurchaseOrderSchema.findOne({
       _id: approvedPO,
+      companyIdf: req.user.companyIdf,
     });
 
     if (purchaseOrders.length === 0) {
@@ -1373,8 +1382,8 @@ async function getMergedPurchaseOrders(req, res) {
       };
 
       // Update the PO instead of creating a new one
-      savedMergedPO = await PurchaseOrderSchema.findByIdAndUpdate(
-        ObjectID(approvedPO), // THE PO THAT MUST BE UPDATED
+      savedMergedPO = await PurchaseOrderSchema.findOneAndUpdate(
+        { _id: ObjectID(approvedPO), companyIdf: req.user.companyIdf }, // THE PO THAT MUST BE UPDATED
         updateFields,
         { new: true } // return updated document
       );
@@ -1396,6 +1405,7 @@ async function getMergedPurchaseOrders(req, res) {
       delete mergedPO._id;
 
       // Create the new merged PO document
+      mergedPO.companyIdf = req.user.companyIdf;
       const mergedPODoc = new PurchaseOrderSchema(mergedPO);
 
       // Save the merged PO document
@@ -1404,6 +1414,7 @@ async function getMergedPurchaseOrders(req, res) {
     // 7. Delete the original POs
     await PurchaseOrderSchema.deleteMany({
       _id: { $in: ids.map((id) => ObjectID(id)) },
+      companyIdf: req.user.companyIdf,
     });
 
   await invalidateEntity("PO");

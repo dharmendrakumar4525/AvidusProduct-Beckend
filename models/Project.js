@@ -12,6 +12,11 @@ const mongoose = require('mongoose');
 const schema = mongoose.Schema;
 
 const projectSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
 
     projectName: {
         type: String,

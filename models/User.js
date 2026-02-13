@@ -76,7 +76,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   // Company association (Each user belongs to one company)
-    companyId: {
+companyIdf: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "onboardingcompany",
       required: true,

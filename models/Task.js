@@ -14,6 +14,11 @@
 const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Task Name
      * Name of the task

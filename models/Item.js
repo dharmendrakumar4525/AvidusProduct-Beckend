@@ -14,6 +14,11 @@ const schema = mongoose.Schema;
 const config = require('../config/env');
 
 const ItemSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // Item identification
     item_name: {
         type: String,

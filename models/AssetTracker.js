@@ -22,6 +22,11 @@ const Schema = mongoose.Schema;
 
 const AssetTrackerSchema = new Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // ---------- Auto-filled Details ----------
     /**
      * PO Number

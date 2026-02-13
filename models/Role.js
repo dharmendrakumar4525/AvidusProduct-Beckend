@@ -10,6 +10,11 @@
 const mongoose = require("mongoose");
 
 const roleSchema = new mongoose.Schema({
+  companyIdf: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "onboardingcompany",
+      required: true
+  },
   // Role name (e.g., "superadmin", "project_manager", "store_manager")
   role: {
     type: String,

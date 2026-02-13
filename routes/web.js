@@ -72,6 +72,13 @@ router.get("/dasboard-stats", middleware.jwtVerify, controllerObj.utilityControl
 
 /**
  * ============================================
+ * CHATBOT ROUTES
+ * ============================================
+ */
+router.post("/chatbot/ask", middleware.jwtVerify, controllerObj.chatbot.ask);
+
+/**
+ * ============================================
  * ABOUT US ROUTES
  * ============================================
  */
@@ -1418,26 +1425,32 @@ router.post(
 
 router.put(
   "/inventory-transfer/approve",
+  middleware.jwtVerify,
   controllerObj.SiteInventoryTransfer.approveTransfer
 );
 router.put(
   "/inventory-transfer/dispatch",
+  middleware.jwtVerify,
   controllerObj.SiteInventoryTransfer.dispatchTransfer
 );
 router.put(
   "/inventory-transfer/receive",
+  middleware.jwtVerify,
   controllerObj.SiteInventoryTransfer.receiveTransfer
 );
 router.delete(
   "/inventory-transfer/cancel/:id",
+  middleware.jwtVerify,
   controllerObj.SiteInventoryTransfer.cancelTransfer
 );
 router.get(
   "/inventory-transfer/details",
+  middleware.jwtVerify,
   controllerObj.SiteInventoryTransfer.getTransfer
 );
 router.get(
   "/inventory-transfer",
+  middleware.jwtVerify,
   controllerObj.SiteInventoryTransfer.getTransferList
 );
 

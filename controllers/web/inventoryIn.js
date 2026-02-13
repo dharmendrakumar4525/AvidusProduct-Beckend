@@ -63,6 +63,10 @@ const createInventoryData = async (req, res) => {
       }
     }
 
+    // Set companyIdf for each entry from authenticated user
+    const companyIdf = req.user.companyIdf;
+    entries.forEach(entry => { entry.companyIdf = companyIdf; });
+
     // Insert entries into the database
     const result = await InventoryIn.insertMany(entries);
     
@@ -126,14 +130,14 @@ async function getInStockData(req, res) {
     const sortDirection = sortOrder === "desc" ? 1 : -1;
 
     // Check cache first
-    const cacheKey = `INVENTORY:IN:${JSON.stringify(req.query)}`;
+    const cacheKey = `INVENTORY:IN:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
     const cached = await getCache(cacheKey);
     if (cached) {
       return res.status(200).json(cached);
     }
 
     // Build main filters
-    const filters = {};
+    const filters = { companyIdf: req.user.companyIdf };
 
     // Handle site_id filter (supports comma-separated string or array)
     if (site_id) {
@@ -209,7 +213,7 @@ console.log(startDate, endDate);
 
     
 
-const itemFilters= {};
+const itemFilters= { companyIdf: req.user.companyIdf };
 
 // Check if search is provided
 if (search && search.trim() !== "") {

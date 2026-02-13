@@ -11,6 +11,11 @@ const config = require("../config/env");
 
 const GstSchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // GST identification
     gst_name: {
       type: String,

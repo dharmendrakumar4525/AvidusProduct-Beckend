@@ -32,7 +32,7 @@ module.exports = {
  */
 async function getList(req, res) {
     try {
-        const subTasks = await MasterSubTask.find();
+        const subTasks = await MasterSubTask.find({ companyIdf: req.user.companyIdf });
         res.send(subTasks);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -62,12 +62,13 @@ async function getList(req, res) {
 async function createData(req, res) {
     try {
         // Check if subtask name already exists
-        const mstaskExits = await MasterSubTask.findOne({ subTaskName: req.body.subTaskName });
+        const mstaskExits = await MasterSubTask.findOne({ subTaskName: req.body.subTaskName, companyIdf: req.user.companyIdf });
 
         if (mstaskExits) return res.status(400).send({ status: 'faild', message: "this sub activity already exits" });
 
         // Create new master subtask
         let subTask = new MasterSubTask({
+            companyIdf: req.user.companyIdf,
             subTaskName: req.body.subTaskName,
             taskId: req.body.taskId,
         });
@@ -79,6 +80,7 @@ async function createData(req, res) {
 
         // Log activity
         let recentActivity = new RecentActivity({
+            companyIdf: req.user.companyIdf,
             description: `new sub activity ${subTask.subTaskName} created`
         });
         recentActivity = await recentActivity.save();
@@ -110,12 +112,12 @@ async function createData(req, res) {
 async function updateData(req, res) {
     try {
         // Check if subtask name already exists (excluding current subtask)
-        const mstaskExits = await MasterSubTask.findOne({ subTaskName: req.body.subTaskName });
+        const mstaskExits = await MasterSubTask.findOne({ subTaskName: req.body.subTaskName, companyIdf: req.user.companyIdf });
 
         if (mstaskExits) return res.status(400).send({ status: 'faild', message: "this sub activity already exits" });
         
         // Update master subtask
-        const subTask = await MasterSubTask.findByIdAndUpdate(req.params.id, {
+        const subTask = await MasterSubTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             subTaskName: req.body.subTaskName,
             taskId: req.body.taskId,
         }, { new: true });
@@ -144,7 +146,7 @@ async function updateData(req, res) {
  */
 async function getDetails(req, res) {
     try {
-        const subTask = await MasterSubTask.findById(req.params.id);
+        const subTask = await MasterSubTask.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!subTask) return res.send('no subTask exits');
 
@@ -177,7 +179,7 @@ async function deleteDetails(req, res) {
         }
         
         // Delete multiple master subtasks
-        let deleteProductsResponse = await MasterSubTask.remove({ _id: { $in: kk } });
+        let deleteProductsResponse = await MasterSubTask.remove({ _id: { $in: kk }, companyIdf: req.user.companyIdf });
 
         if (!deleteProductsResponse) return res.send('subTask not deleted');
 
@@ -204,7 +206,7 @@ async function deleteDetails(req, res) {
 async function deleteById(req, res) {
     try {
         // Delete master subtask
-        const subTask = await MasterSubTask.findByIdAndRemove(req.params.id);
+        const subTask = await MasterSubTask.findOneAndRemove({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!subTask) return res.send('subTask not deleted');
 

@@ -83,9 +83,9 @@ async function getList(req, res) {
     }
 
     // Build base query with population and sorting
-    let usersQuery = User.find(query)
+    let usersQuery = User.find({ ...query, companyIdf: req.user.companyIdf })
       .populate("sites") // Populate site references
-      .populate("companyId")
+      .populate("companyIdf")
       .sort({ name: sortOrder }) // Sort by name
       .lean(); // Return plain objects
 
@@ -97,7 +97,7 @@ async function getList(req, res) {
 
       // Execute paginated query
       const users = await usersQuery.skip(skip).limit(limit);
-      const total = await User.countDocuments(query); // Get total count
+      const total = await User.countDocuments({ ...query, companyIdf: req.user.companyIdf }); // Get total count
 
       response = {
         data: users,
@@ -161,9 +161,9 @@ async function getDataByID(req, res) {
     }
 
     // Step 2: Fetch from MongoDB if not in cache
-    let user = await User.findById(userId)
+    let user = await User.findOne({ _id: userId, companyIdf: req.user.companyIdf })
       .populate("sites") // Populate site references
-      .populate("companyId")
+      .populate("companyIdf")
       .lean();
 
     if (!user) return res.send("no user exists");
@@ -237,7 +237,6 @@ async function updateData(req, res) {
         password: hashedPassword,
         sites: req.body.sites,
         notifications: req.body.notifications,
-        companyId:req.body.companyId
       };
     } else {
       updatedata = {
@@ -247,13 +246,13 @@ async function updateData(req, res) {
         phone: req.body.phone,
         sites: req.body.sites,
         notifications: req.body.notifications,
-        companyId:req.body.companyId,
-        // password:req.body.password,
       };
     }
-    const user = await User.findByIdAndUpdate(req.params.id, updatedata, {
-      new: true,
-    }).populate("sites");
+    const user = await User.findOneAndUpdate(
+      { _id: req.params.id, companyIdf: req.user.companyIdf },
+      updatedata,
+      { new: true }
+    ).populate("sites");
 
     if (!user) return res.send("user not updated");
 await deleteCache(`user:details:${req.params.id}`);
@@ -276,7 +275,7 @@ await invalidateEntityList("user");
 
 async function deleteData(req, res) {
   try {
-    const user = await User.findByIdAndRemove(req.params.id);
+    const user = await User.findOneAndRemove({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
     if (!user) return res.send("user not deleted");
 await deleteCache(`user:details:${req.params.id}`);
@@ -360,7 +359,7 @@ async function createUser(req, res) {
       password: hashedPassword, // Store hashed password, never plain text
       sites: req.body.sites,
       notifications: req.body.notifications,
-       companyId: req.body.companyId
+      companyIdf: req.user.companyIdf
     });
 
     // Save user to database
@@ -407,7 +406,7 @@ async function loginUser(req, res) {
     // Find user by email and populate sites
     const userExits = await User.findOne({ email: req.body.email }).populate(
       "sites"
-    );
+    ).populate("companyIdf");
     // Validate user exists
     if (!userExits) return res.status(400).send("email not exit");
 
@@ -423,7 +422,7 @@ async function loginUser(req, res) {
     // Generate JWT token with user ID and name
     // Note: In production, use environment variable for secret key
     const token = jwt.sign(
-      { id: userExits._id, name: userExits.name,companyIdf: userExits.companyId ,isActive:userExits.isActive},
+      { id: userExits._id, name: userExits.name, companyIdf: userExits.companyIdf, isActive: userExits.isActive },
        process.env.JWT_SECRET,
     );
 

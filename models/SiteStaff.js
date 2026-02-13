@@ -17,6 +17,11 @@
 const mongoose = require("mongoose");
 
 const siteStaffSchema = new mongoose.Schema({
+  companyIdf: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "onboardingcompany",
+      required: true
+  },
   /**
    * Staff Name
    * @type {String}

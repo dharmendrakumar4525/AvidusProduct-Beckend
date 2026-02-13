@@ -60,6 +60,7 @@ module.exports = {
 async function createData(req, res) {
   try {
     let reqObj = req.body;
+    reqObj.companyIdf = req.user.companyIdf;
     reqObj.created_by = reqObj.login_user_id;
     reqObj.updated_by = reqObj.login_user_id;
 
@@ -134,6 +135,7 @@ async function updateData(req, res) {
     let updatedData = await ItemSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -194,17 +196,17 @@ async function deleteData(req, res) {
       };
     }
 
-    let getData = await ItemSchema.findOne({ _id: ObjectID(_id) });
+    let getData = await ItemSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!getData) {
       throw {
         errors: [],
-        message: responseMessage(loginData.langCode, "NO_RECORD_FOUND"),
+        message: responseMessage(reqObj.langCode, "NO_RECORD_FOUND"),
         statusCode: 412,
       };
     }
 
-    const dataRemoved = await ItemSchema.deleteOne({ _id: ObjectID(_id) });
+    const dataRemoved = await ItemSchema.deleteOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
     await ItemSchema.deleteOne({ _id: ObjectID(_id) });
 
     // Invalidate cache for this item and item list
@@ -266,7 +268,7 @@ async function getDetails(req, res) {
 
     /* ---------- DB QUERY ---------- */
     const recordDetail = await ItemSchema.aggregate([
-      { $match: { _id: ObjectID(_id) } },
+      { $match: { _id: ObjectID(_id), companyIdf: ObjectID(req.user.companyIdf) } },
       {
         $lookup: {
           from: "categories",
@@ -387,7 +389,7 @@ async function getList(req, res) {
       : { _id: 1 };
 
     // Build match filter
-    const matchFilter = {};
+    const matchFilter = { companyIdf: mongoose.Types.ObjectId(req.user.companyIdf) };
     if (search) {
       matchFilter.item_name = { $regex: search, $options: "i" };
     }
@@ -707,7 +709,7 @@ async function processCSVData(data) {
 async function getNextItemNumber(req, res) {
   try {
     // Find the item with the highest item_number
-    const lastItem = await ItemSchema.findOne({})
+    const lastItem = await ItemSchema.findOne({ companyIdf: req.user.companyIdf })
       .sort({ item_number: -1 }) // sort descending
       .select({ item_number: 1 }) // only need item_number
       .lean();

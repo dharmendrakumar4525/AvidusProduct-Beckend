@@ -61,7 +61,7 @@ async function getList(req, res) {
         }
         
         // Fetch all projects from database
-        const projects = await Project.find().lean();
+        const projects = await Project.find({ companyIdf: req.user.companyIdf }).lean();
         
         // Cache the result for 30 minutes
         await setCache(cacheKey, projects, PROJECT);
@@ -118,7 +118,7 @@ async function getDetails(req, res) {
         }
         
         // Find project by ID
-        const project = await Project.findById(projectId).lean();
+        const project = await Project.findOne({ _id: projectId, companyIdf: req.user.companyIdf }).lean();
         if (!project) return res.send('no project exits');
         
         // Cache the result for 30 minutes
@@ -158,6 +158,7 @@ async function createData(req, res) {
     try {
         // Create new project instance
         let project = new Project({
+            companyIdf: req.user.companyIdf,
             projectName: req.body.projectName,
             projectDate: req.body.projectDate,
             location: req.body.location,
@@ -246,7 +247,8 @@ async function updateData(req, res) {
 
         // Update project and return updated document
         let updatedData = await Project.findOneAndUpdate({
-            _id: ObjectId(reqObj._id)
+            _id: ObjectId(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true // Return updated document
         });
@@ -323,7 +325,7 @@ async function postDataById(req, res) {
 
 async function updateProject(req, res) {
     try {
-        const project = await Project.findByIdAndUpdate(req.params.id, {
+        const project = await Project.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
 
             projectName: req.body.projectName,
             projectDate: req.body.projectDate,
@@ -361,7 +363,7 @@ async function updateProject(req, res) {
 
 async function updateProjectById(req, res) {
     try {
-        const project = await Project.findByIdAndUpdate(req.params.id, {
+        const project = await Project.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
 
             projectName: req.body.projectName,
             location: req.body.location,
@@ -393,7 +395,7 @@ async function updateProjectById(req, res) {
 
 async function updateMenberById(req, res) {
     try {
-        const project = await Project.findByIdAndUpdate(req.params.id, {
+        const project = await Project.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
 
             members: req.body.members,
 
@@ -427,7 +429,7 @@ async function updateMenberById(req, res) {
 async function deleteById(req, res) {
     try {
         const projectId = req.params.id;
-        const project = await Project.findByIdAndRemove(projectId)
+        const project = await Project.findOneAndRemove({ _id: projectId, companyIdf: req.user.companyIdf })
 
         if (!project) return res.send('project not deleted')
 
@@ -453,6 +455,7 @@ async function deleteById(req, res) {
 async function getListById(req, res) {
     try {
         const task = await Project.aggregate([
+            { $match: { companyIdf: ObjectId(req.user.companyIdf) } },
             { $project: { projectName: 1 } },
             { "$addFields": { "projectId": { "$toString": "$_id" } } },
             {

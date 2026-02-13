@@ -48,6 +48,7 @@
     "nodemailer": "^6.10.0",
     "nodemailer-express-handlebars": "^5.0.0",
     "nodemon": "^2.0.22",
+    "openai": "^6.21.0",
     "redis": "^5.10.0",
     "slugify": "^1.6.6",
     "utils-deep-clone": "0.0.3",

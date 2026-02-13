@@ -42,6 +42,7 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
@@ -102,7 +103,8 @@ async function updateData(req, res) {
 
         // Update category and return updated document
         let updatedData = await CategorySchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true // Return updated document
         });
@@ -141,17 +143,17 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await CategorySchema.findOne({ "_id": ObjectID(_id)});
+        let getData = await CategorySchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 
-        const dataRemoved = await CategorySchema.deleteOne({ "_id": ObjectID(_id)});
+        const dataRemoved = await CategorySchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         
         await invalidateEntity("category");
 await invalidateEntityList("category");
@@ -201,6 +203,7 @@ async function getDetails(req, res) {
 
     const recordDetail = await CategorySchema.findOne({
       _id: ObjectID(_id),
+      companyIdf: req.user.companyIdf,
     }).lean();
 
     if (!recordDetail) {
@@ -253,7 +256,7 @@ async function getList(req, res) {
     const skip = (pageNum - 1) * limitNum;
 
     // 🔹 SEARCH QUERY
-    const matchQuery = {};
+    const matchQuery = { companyIdf: ObjectID(req.user.companyIdf) };
     if (search) {
       matchQuery.category_name = { $regex: search, $options: "i" };
     }

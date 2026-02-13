@@ -87,6 +87,7 @@ async function createOrUpdateInventory(req) {
     item_id,
     site_id,
     inventoryType,
+    companyIdf: req.user.companyIdf,
   });
   
   // Format current date
@@ -150,6 +151,7 @@ async function createOrUpdateInventory(req) {
         site_id,
         stock_quantity: quantity,
         inventoryType,
+        companyIdf: req.user.companyIdf,
         date: formattedDate,
         created_at: new Date(),
         updated_at: new Date(),
@@ -170,7 +172,7 @@ async function createOrUpdateInventory(req) {
 
 async function getInventoryList(req, res) {
   const { site_id, inventoryType, searchString = "" } = req.query;
-    const cacheKey = `INVENTORY:LIST:${JSON.stringify(req.query)}`;
+    const cacheKey = `INVENTORY:LIST:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
       
           const cached = await getCache(cacheKey);
           if (cached) {
@@ -189,11 +191,11 @@ async function getInventoryList(req, res) {
     }
 
     // Fetch Inventory items first
-    let inventoryItems = await Inventory.find({ site_id, inventoryType });
+    let inventoryItems = await Inventory.find({ site_id, inventoryType, companyIdf: req.user.companyIdf });
 
     // Fetch related Item details
     const itemIds = inventoryItems.map((item) => item.item_id);
-    const items = await Item.find({ _id: { $in: itemIds } });
+    const items = await Item.find({ _id: { $in: itemIds }, companyIdf: req.user.companyIdf });
 
     // Map item details to inventory items
     inventoryItems = inventoryItems.map((item) => {
@@ -250,7 +252,7 @@ async function getInventoryData(req, res) {
 
     // Validate pagination
     //console.log("page____________________", req.query);
-      const cacheKey = `INVENTORY:SEARCH:${JSON.stringify(req.query)}`;
+      const cacheKey = `INVENTORY:SEARCH:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
         
             const cached = await getCache(cacheKey);
             if (cached) {
@@ -269,6 +271,7 @@ async function getInventoryData(req, res) {
       ...(type && { inventoryType: type }),
       ...(itemId && { item_id: ObjectID(itemId) }),
       ...(siteId && { site_id: ObjectID(siteId) }),
+      companyIdf: ObjectID(req.user.companyIdf),
     };
 
     // Fetch total records
@@ -365,7 +368,7 @@ async function getInventoryData(req, res) {
     // If no type, itemId, categoryId, or subCategoryId is provided, fetch all data
     if (!type && !itemId && !categoryId && !siteId && !subCategoryId) {
       inventoryData = await Inventory.aggregate([
-        { $match: {} },
+        { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
         {
           $lookup: {
             from: "items",

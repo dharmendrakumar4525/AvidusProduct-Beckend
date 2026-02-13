@@ -72,13 +72,13 @@ exports.createTransfer = async (req, res) => {
     }
 
     // Validate origin site exists
-    const originSite = await Site.findById(origin_site);
+    const originSite = await Site.findOne({ _id: origin_site, companyIdf: req.user.companyIdf });
     if (!originSite) {
       return res.status(404).json({ message: "Origin site not found." });
     }
 
     // Get last entry number for this site and increment
-    const lastTransfer = await Transfer.findOne({ origin_site })
+    const lastTransfer = await Transfer.findOne({ origin_site, companyIdf: req.user.companyIdf })
       .sort({ entry_number: -1 })
       .select("entry_number");
 
@@ -94,6 +94,7 @@ exports.createTransfer = async (req, res) => {
       items,
       approvals,
       notes,
+      companyIdf: req.user.companyIdf,
       timeline: [
         {
           action: "Created",
@@ -132,7 +133,7 @@ exports.submitTransfer = async (req, res) => {
     const { id } = req.params;
     const { submitted_by } = req.body;
 
-    const transfer = await Transfer.findById(id);
+    const transfer = await Transfer.findOne({ _id: id, companyIdf: req.user.companyIdf });
     if (!transfer) throw new Error("Transfer not found");
     if (transfer.status !== "Draft")
       throw new Error("Only Draft transfers can be submitted");
@@ -173,7 +174,7 @@ exports.approveTransfer = async (req, res) => {
       throw new Error("Invalid approval_type. Must be project_director or store_Asset_head.");
     }
 
-    const transfer = await Transfer.findById(ObjectID(_id)).session(session);
+    const transfer = await Transfer.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf }).session(session);
     if (!transfer) throw new Error("Transfer not found.");
 
     const user = await User.findById(ObjectID(userId)).session(session);
@@ -242,7 +243,7 @@ exports.dispatchTransfer = async (req, res) => {
     } = req.body;
 
     // 1. Find the Transfer Request
-    const transfer = await Transfer.findById(_id).session(session);
+    const transfer = await Transfer.findOne({ _id: _id, companyIdf: req.user.companyIdf }).session(session);
     if (!transfer) throw new Error("Transfer not found");
 
     if (transfer.status !== "HO Approved")
@@ -319,6 +320,7 @@ exports.dispatchTransfer = async (req, res) => {
       const lastOut = await InventoryOut.findOne({
         item_id,
         site_id: transfer.origin_site,
+        companyIdf: req.user.companyIdf,
       })
         .sort({ date: -1 })
         .session(session);
@@ -365,7 +367,7 @@ exports.receiveTransfer = async (req, res) => {
     const { _id, received_by, received_date, received_items } = req.body;
 
     // ==== FETCH TRANSFER ====
-    const transfer = await Transfer.findById(_id).session(session);
+    const transfer = await Transfer.findOne({ _id: _id, companyIdf: req.user.companyIdf }).session(session);
     if (!transfer) throw new Error("Transfer not found");
 
     if (transfer.status !== "Dispatched")
@@ -503,7 +505,7 @@ exports.receiveTransfer = async (req, res) => {
 exports.cancelTransfer = async (req, res) => {
   try {
     const { id } = req.params;
-    const transfer = await Transfer.findById(id);
+    const transfer = await Transfer.findOne({ _id: id, companyIdf: req.user.companyIdf });
     if (!transfer) throw new Error("Transfer not found");
     if (!["Draft", "Submitted"].includes(transfer.status)) {
       throw new Error("Only Draft or Submitted transfers can be cancelled");
@@ -528,14 +530,14 @@ exports.cancelTransfer = async (req, res) => {
 exports.getTransfer = async (req, res) => {
   try {
     const { _id } = req.query;
- const cacheKey = `INVENTORY:INTERSITETRANSFER:DETAILS:${_id}`;
+ const cacheKey = `INVENTORY:INTERSITETRANSFER:DETAILS:${_id}:${req.user.companyIdf}`;
             
                 const cached = await getCache(cacheKey);
                 if (cached) {
                   console.log("RETURNING CACHED DATA");
                   return res.status(200).json(cached);
                 }
-    const transfer = await Transfer.findById(ObjectID(_id))
+    const transfer = await Transfer.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf })
       .populate("origin_site") // full site
       .populate("destination_site") // full site
       .populate({
@@ -594,8 +596,8 @@ exports.getTransferList = async (req, res) => {
     // ─────────────────────────────────────────────
     // BUILD FILTER OBJECT
     // ─────────────────────────────────────────────
-    const filter = { is_deleted: false };
-  const cacheKey = `INVENTORY:INTERSITETRANSFER:LIST:${JSON.stringify(req.query)}`;
+    const filter = { is_deleted: false, companyIdf: req.user.companyIdf };
+  const cacheKey = `INVENTORY:INTERSITETRANSFER:LIST:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
             
                 const cached = await getCache(cacheKey);
                 if (cached) {

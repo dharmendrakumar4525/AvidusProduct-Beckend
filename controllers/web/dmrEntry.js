@@ -58,17 +58,20 @@ async function createData(req, res) {
     } = req.body;
 
     // Create and save new DMR entry
-    let dmrForm = new dmrEntry({ ...req.body });
+    let dmrForm = new dmrEntry({ ...req.body, companyIdf: req.user.companyIdf });
     dmrForm = await dmrForm.save();
 
     // If invoice is created, close related challans
     // This links challans to their corresponding invoice
     if (closedChallan.length > 0) {
       for (const challanId of closedChallan) {
-        await dmrEntry.findByIdAndUpdate(ObjectID(challanId), {
-          challanStatus: "closed",
-          InvoiceNumber: InvoiceNumber, // Link challan to invoice
-        });
+        await dmrEntry.findOneAndUpdate(
+          { _id: ObjectID(challanId), companyIdf: req.user.companyIdf },
+          {
+            challanStatus: "closed",
+            InvoiceNumber: InvoiceNumber, // Link challan to invoice
+          }
+        );
       }
     }
 
@@ -209,7 +212,7 @@ async function updateDMREntries(req, res) {
 
     // Iterate to check if status should be updated
     const updatePromises = dmrIds.map(async (id) => {
-      const dmr = await dmrEntry.findById(id);
+      const dmr = await dmrEntry.findOne({ _id: id, companyIdf: req.user.companyIdf });
       if (!dmr) return null;
 
       // Merge updates
@@ -280,7 +283,7 @@ async function getList(req, res) {
       : { _id: -1 };
 
     // ---- Filters ----
-    const filterRequest = {};
+    const filterRequest = { companyIdf: new ObjectID(req.user.companyIdf) };
 
     if (DMR_No?.trim())
       filterRequest.DMR_No = { $regex: DMR_No.trim(), $options: "i" };
@@ -392,6 +395,7 @@ async function updateData(req, res) {
     let updatedData = await dmrEntry.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -455,6 +459,7 @@ async function opneChallan(req, res) {
       PONumber: ponumber,
       entry_type: "ChallanNumber",
       challanStatus: "open",
+      companyIdf: req.user.companyIdf,
     });
 
     if (entries.length === 0) {
@@ -476,7 +481,7 @@ async function getDMREntryNumber(req, res) {
     //console.log("check site", site);
     // Find the latest entry for the given site, sorted by entryNo in descending order
     const lastEntry = await dmrEntry
-      .findOne({ Site: site })
+      .findOne({ Site: site, companyIdf: req.user.companyIdf })
       .sort({ entryNo: -1 });
     //console.log("check entry_______________",lastEntry);
     let nextEntryNo = 1; // Default if no entry exists for the site
@@ -507,8 +512,8 @@ async function getDmrCounts(req, res) {
     } = req.query;
 
     // Initialize filters
-    const dmrFilter = {};
-    const imprestFilter = {};
+    const dmrFilter = { companyIdf: req.user.companyIdf };
+    const imprestFilter = { companyIdf: req.user.companyIdf };
     const cacheKey = `DMRENTRY:STATUS_COUNT:${JSON.stringify(req.query)}`;
     const cachedData = await getCache(cacheKey);
     if (cachedData) {
@@ -607,7 +612,7 @@ async function getUniqueDMRNumber(req, res) {
   try {
     const { query = "" } = req.query;
 
-    const allOrders = await dmrEntry.find({}, { DMR_No: 1 });
+    const allOrders = await dmrEntry.find({ companyIdf: req.user.companyIdf }, { DMR_No: 1 });
 
     const poLastFourSet = new Set();
 
@@ -649,6 +654,7 @@ async function checkDuplicateInvoice(req, res) {
       PONumber: po,
       InvoiceNumber: { $regex: `^${invoice}$`, $options: "i" }, // case-insensitive
       entry_type: "InvoiceNumber",
+      companyIdf: req.user.companyIdf,
     });
 
     //console.log("check existingInvoice", existingInvoice);
@@ -688,6 +694,7 @@ async function checkDuplicateChallan(req, res) {
       PONumber: po,
       ChallanNumber: { $regex: `^${challan}$`, $options: "i" }, // case-insensitive
       entry_type: "ChallanNumber",
+      companyIdf: req.user.companyIdf,
     });
 
     //console.log("check existingInvoice", existingInvoice);
@@ -723,10 +730,10 @@ async function getGateEntryNumber(req, res) {
     }
 
     let entries = await dmrEntry
-      .find({ Site: site })
+      .find({ Site: site, companyIdf: req.user.companyIdf })
       .select("GateRegisterEntry");
 
-    const imprestEntries = await Imprest_Dmr_Entry.find({ Site: site }).select(
+    const imprestEntries = await Imprest_Dmr_Entry.find({ Site: site, companyIdf: req.user.companyIdf }).select(
       "GateRegisterEntry"
     );
 

@@ -59,6 +59,7 @@ async function addInventoryOutEntry({
   useType,
   authorized_person,
   contractor,
+  companyIdf,
 }) {
   try {
     let remainingQuantity = quantity;
@@ -68,6 +69,7 @@ async function addInventoryOutEntry({
       item_id: item_id,
       site_id: site_id,
       inventoryType: inventory_type,
+      companyIdf: companyIdf,
     }).sort({ date: 1 }); // FIFO based on date (oldest first)
 
     // Validate sufficient inventory exists
@@ -117,6 +119,7 @@ async function addInventoryOutEntry({
       return_type,
       authorized_person,
       contractor,
+      companyIdf,
     });
 
     await inventoryOutEntry.save();
@@ -156,8 +159,8 @@ async function InventoryData(req, res) {
       sortOrder = "desc",
     } = req.query;
 
-    const filters = {};
-    const cacheKey = `INVENTORY:STATS:${JSON.stringify(req.query)}`;
+    const filters = { companyIdf: ObjectID(req.user.companyIdf) };
+    const cacheKey = `INVENTORY:STATS:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
         
             const cached = await getCache(cacheKey);
             if (cached) {
@@ -402,7 +405,7 @@ async function InventoryData(req, res) {
 
     const uniqueItems = Object.values(combinedData);
 
-  const item_filters= {};
+  const item_filters= { companyIdf: req.user.companyIdf };
 
 // Check if search is provided
 if (search && search.trim() !== "") {
@@ -505,7 +508,7 @@ async function getOutStockData(req, res) {
     const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
     const skip = (page - 1) * limit;
 
-     const cacheKey = `INVENTORY:OUT:${JSON.stringify(req.query)}`;
+     const cacheKey = `INVENTORY:OUT:${req.user.companyIdf}:${JSON.stringify(req.query)}`;
         
             const cached = await getCache(cacheKey);
             if (cached) {
@@ -516,7 +519,7 @@ async function getOutStockData(req, res) {
     /** ---------------------------
      *  STEP 1: Build filters
      * --------------------------- */
-    const filters = {};
+    const filters = { companyIdf: req.user.companyIdf };
 
   
 
@@ -564,7 +567,7 @@ async function getOutStockData(req, res) {
     /** ---------------------------
      *  STEP 3: Fetch item details in bulk
      * --------------------------- */
-   const itemFilters= {};
+   const itemFilters= { companyIdf: req.user.companyIdf };
 
 // Check if search is provided
 if (search && search.trim() !== "") {

@@ -17,6 +17,11 @@
 const mongoose = require('mongoose');
 
 const lineGraphSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * SubTask Name
      * Name of the subtask

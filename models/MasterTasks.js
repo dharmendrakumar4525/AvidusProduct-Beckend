@@ -12,6 +12,11 @@
 const mongoose = require('mongoose');
 
 const masterTaskSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Task Name
      * Name of the master task (must be unique)

@@ -15,6 +15,11 @@ const config = require("../config/env");
 
 const PurchaseOrderSchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Purchase Order Number
      * Unique identifier for the purchase order

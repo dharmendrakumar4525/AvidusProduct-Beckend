@@ -42,6 +42,7 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
@@ -102,7 +103,8 @@ async function updateData(req, res) {
 
         // Update brand and return updated document
         let updatedData = await BrandSchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true // Return updated document
         });
@@ -140,17 +142,17 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await BrandSchema.findOne({ "_id": ObjectID(_id)});
+        let getData = await BrandSchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 
-        const dataRemoved = await BrandSchema.deleteOne({ "_id": ObjectID(_id)});
+        const dataRemoved = await BrandSchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         await invalidateEntity("brand");
 
         
@@ -191,7 +193,7 @@ async function getDetails(req, res) {
       });
     }
 
-    const recordDetail = await BrandSchema.findOne({ _id: ObjectID(_id) });
+    const recordDetail = await BrandSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     let response;
 
@@ -262,7 +264,7 @@ async function getList(req, res) {
     }
 
     // 2️⃣ Build search query
-    let matchQuery = {};
+    let matchQuery = { companyIdf: req.user.companyIdf };
     if (search) {
       matchQuery.brand_name = { $regex: search, $options: "i" };
     }

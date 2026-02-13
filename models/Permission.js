@@ -12,6 +12,11 @@
 const mongoose = require('mongoose');
 
 const permissionSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Permission
      * Permission name/identifier

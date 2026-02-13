@@ -31,7 +31,16 @@ const middleware = {
         );
       }
 
-      // 5️⃣ Attach user to request (optional but recommended)
+      // 5️⃣ Validate companyIdf for multi-tenant isolation
+      if (!decoded.companyIdf) {
+        return res.status(401).json(
+          await Response.errors({
+            message: "Unauthorized: companyIdf is missing from token",
+          })
+        );
+      }
+
+      // 6️⃣ Attach user to request
       req.user = decoded;
 
       next();

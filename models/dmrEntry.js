@@ -46,6 +46,11 @@ const config = require("../config/env");
 
 const dmrEntrySchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * PO Number
      * Purchase order number

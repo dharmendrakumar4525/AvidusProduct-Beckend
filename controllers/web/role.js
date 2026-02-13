@@ -76,13 +76,13 @@ async function getList(req, res) {
     }
 
     // Build search query
-    const query = {};
+    const query = { companyIdf: req.user.companyIdf };
     if (search && search.trim()) {
       query.role = { $regex: search, $options: "i" }; // Case-insensitive search
     }
 
     // Get total count (irrespective of search filter)
-    const totalItems = await Role.countDocuments({});
+    const totalItems = await Role.countDocuments({ companyIdf: req.user.companyIdf });
 
     // Build data query with sorting
     let roleQuery = Role.find(query).sort({ role: sortOrder });
@@ -128,7 +128,7 @@ async function getDataByID(req, res) {
       return res.status(200).json({ ...cached, source: "cache" });
     }
 
-    const role = await Role.findById(id).lean();
+    const role = await Role.findOne({ _id: id, companyIdf: req.user.companyIdf }).lean();
     if (!role) {
       return res.status(404).json({
         success: false,
@@ -158,7 +158,7 @@ async function getDataByRole(req, res) {
       return res.status(200).json({ ...cached, source: "cache" });
     }
 
-    const roleData = await Role.findOne({ role }).lean();
+    const roleData = await Role.findOne({ role, companyIdf: req.user.companyIdf }).lean();
     if (!roleData) {
       return res.status(404).json({
         success: false,
@@ -192,7 +192,7 @@ async function getDataByRole(req, res) {
 async function createData(req, res) {
   try {
     // Create new role
-    const role = await Role.create(req.body);
+    const role = await Role.create({ ...req.body, companyIdf: req.user.companyIdf });
 
     // Invalidate role cache to ensure fresh data
     await invalidateEntity("role");
@@ -241,6 +241,7 @@ async function updateData(req, res) {
     const existingRole = await Role.findOne({
       role: { $regex: new RegExp("^" + newRole + "$", "i") }, // Case-insensitive exact match
       _id: { $ne: req.params.id },
+      companyIdf: req.user.companyIdf,
     }).exec();
 
     if (existingRole) {
@@ -250,8 +251,8 @@ async function updateData(req, res) {
     }
 
     // Step 2: Update role in the Role collection
-    const updatedRole = await Role.findByIdAndUpdate(
-      req.params.id,
+    const updatedRole = await Role.findOneAndUpdate(
+      { _id: req.params.id, companyIdf: req.user.companyIdf },
       {
         role: newRole,
         notifications,
@@ -262,7 +263,7 @@ async function updateData(req, res) {
     // Step 3: Update all users who have the previous role
     // This ensures role name changes are reflected in user records
     const updatedUsers = await User.updateMany(
-      { role: prevRole }, // Find users with the previous role
+      { role: prevRole, companyIdf: req.user.companyIdf }, // Find users with the previous role
       { role: newRole, notifications } // Update role and notifications
     );
 
@@ -289,7 +290,7 @@ async function deleteList(req, res) {
     for (let single of req.body.selUsers) {
       kk.push(new ObjectId(single));
     }
-    let deleteProductsResponse = await Role.remove({ _id: { $in: kk } });
+    let deleteProductsResponse = await Role.remove({ _id: { $in: kk }, companyIdf: req.user.companyIdf });
 
     if (!deleteProductsResponse) return res.send("role not deleted");
     await invalidateEntity("role");
@@ -359,7 +360,7 @@ async function deleteList(req, res) {
 async function updatePermData(req, res) {
   try {
     const role = await Role.findOneAndUpdate(
-      { role: req.params.role },
+      { role: req.params.role, companyIdf: req.user.companyIdf },
       { $set: { dashboard_permissions: req.body.dashboard_permissions } },
       { new: true }
     );
@@ -382,7 +383,7 @@ async function updatePermData(req, res) {
 
 async function deleteData(req, res) {
   try {
-    const role = await Role.findByIdAndRemove(req.params.id);
+    const role = await Role.findOneAndRemove({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
     if (!role) return res.send("role not deleted");
     await invalidateEntity("role");
@@ -411,7 +412,7 @@ async function getUserPermission(req, res) {
       return res.status(200).json({ ...cached, source: "cache" });
     }
 
-    const user = await User.findById(user_id).lean();
+    const user = await User.findOne({ _id: user_id, companyIdf: req.user.companyIdf }).lean();
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -419,7 +420,7 @@ async function getUserPermission(req, res) {
       });
     }
 
-    const role = await Role.findOne({ role: user.role }).lean();
+    const role = await Role.findOne({ role: user.role, companyIdf: req.user.companyIdf }).lean();
     if (!role) {
       return res.status(404).json({
         success: false,

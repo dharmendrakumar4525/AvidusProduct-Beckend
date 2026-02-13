@@ -10,6 +10,11 @@ const mongoose = require('mongoose');
 const config = require('../config/env');
 
 const UomSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // UOM identification
     uom_name: {
         type: String,

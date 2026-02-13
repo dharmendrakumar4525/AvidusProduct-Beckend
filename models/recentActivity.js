@@ -14,6 +14,11 @@
 const mongoose = require('mongoose');
 
 const recentActivitySchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Activity
      * Activity name/type

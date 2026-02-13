@@ -42,6 +42,7 @@ module.exports = {
 async function createData(req, res) {
   try {
     let reqObj = req.body;
+    reqObj.companyIdf = req.user.companyIdf;
     reqObj.created_by = reqObj.login_user_id;
     reqObj.updated_by = reqObj.login_user_id;
 
@@ -115,6 +116,7 @@ async function updateData(req, res) {
     let updatedData = await UomSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -173,18 +175,18 @@ async function deleteData(req, res) {
       };
     }
 
-    let getData = await UomSchema.findOne({ _id: ObjectID(_id) });
+    let getData = await UomSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 await invalidateEntity("uom");
 
     if (!getData) {
       throw {
         errors: [],
-        message: responseMessage(loginData.langCode, "NO_RECORD_FOUND"),
+        message: responseMessage(reqObj.langCode, "NO_RECORD_FOUND"),
         statusCode: 412,
       };
     }
 
-    const dataRemoved = await UomSchema.deleteOne({ _id: ObjectID(_id) });
+    const dataRemoved = await UomSchema.deleteOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     res
       .status(200)
@@ -233,7 +235,7 @@ async function getDetails(req, res) {
       });
     }
 
-    const recordDetail = await UomSchema.findOne({ _id: ObjectID(_id) });
+    const recordDetail = await UomSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     let response;
 
@@ -306,6 +308,7 @@ async function getList(req, res) {
     // ---------------- PAGINATED ----------------
     if (hasPagination) {
       const allRecords = await UomSchema.aggregate([
+        { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
         {
           $facet: {
             data: [
@@ -328,7 +331,7 @@ async function getList(req, res) {
 
     // ---------------- NON PAGINATED ----------------
     else {
-      const allRecords = await UomSchema.find({}).lean();
+      const allRecords = await UomSchema.find({ companyIdf: req.user.companyIdf }).lean();
 
       response = await Response.success(
         allRecords,

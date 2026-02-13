@@ -14,6 +14,11 @@ const schema = mongoose.Schema;
 
 const VendorSchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // Vendor identification
     vendor_name: {
       type: String,

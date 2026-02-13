@@ -10,6 +10,11 @@
 const mongoose = require('mongoose');
 
 const aboutUsSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * About Us Description
      * The main content/description for the About Us page

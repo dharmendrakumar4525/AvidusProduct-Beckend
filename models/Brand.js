@@ -10,6 +10,11 @@ const schema = mongoose.Schema;
 const config = require('../config/env');
 
 const BrandSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // Brand identification
     brand_name: {
         type: String,

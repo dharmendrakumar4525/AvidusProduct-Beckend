@@ -47,6 +47,7 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
@@ -128,7 +129,7 @@ async function updateData(req, res) {
         }
 
         // Get existing site data before update (needed for role comparison)
-        const existingSite = await SiteSchema.findById(reqObj._id);
+        const existingSite = await SiteSchema.findOne({ _id: reqObj._id, companyIdf: req.user.companyIdf });
         if (!existingSite) {
             throw {
                 errors: [],
@@ -145,7 +146,7 @@ async function updateData(req, res) {
 
         // Update site and return updated document
         const updatedData = await SiteSchema.findOneAndUpdate(
-            { _id: ObjectID(reqObj._id) },
+            { _id: ObjectID(reqObj._id), companyIdf: req.user.companyIdf },
             requestedData,
             { new: true }
         );
@@ -224,17 +225,17 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await SiteSchema.findOne({ "_id": ObjectID(_id)});
+        let getData = await SiteSchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 
-        const dataRemoved = await SiteSchema.deleteOne({ "_id": ObjectID(_id)});
+        const dataRemoved = await SiteSchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         await deleteCache(`site:details:${_id}`);
 await invalidateEntityList("site");
 
@@ -279,7 +280,7 @@ async function getDetails(req, res) {
     }
 
     // 2️⃣ DB fetch
-    const recordDetail = await SiteSchema.findOne({ _id: ObjectID(_id) }).lean();
+    const recordDetail = await SiteSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf }).lean();
 
     if (!recordDetail) {
       return res.status(422).json(
@@ -329,7 +330,7 @@ async function getList(req, res) {
     }
 
     // ---------------- QUERY (SEARCH AWARE) ----------------
-    const query = {};
+    const query = { companyIdf: req.user.companyIdf };
     if (search) {
       query.site_name = { $regex: search, $options: "i" };
     }

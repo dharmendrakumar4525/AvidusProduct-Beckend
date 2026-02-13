@@ -12,6 +12,11 @@ const config = require("../config/env");
 
 const SubCategorySchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // Subcategory identification
     subcategory_name: {
       type: String,

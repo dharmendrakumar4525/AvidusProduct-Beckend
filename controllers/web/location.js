@@ -74,7 +74,8 @@ async function updateData(req, res) {
         let requestedData = { ...reqObj, ...{ updated_by: loginUserId } };
 
         let updatedData = await LocationSchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true
         });
@@ -112,17 +113,17 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await LocationSchema.findOne({ "_id": ObjectID(_id)});
+        let getData = await LocationSchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 
-        const dataRemoved = await LocationSchema.deleteOne({ "_id": ObjectID(_id)});
+        const dataRemoved = await LocationSchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         
         res.status(200).json(await Response.success({}, responseMessage(reqObj.langCode,'RECORD_DELETED'),req));
 
@@ -151,7 +152,7 @@ async function getDetails(req, res) {
             }
         }
 
-        const recordDetail = await LocationSchema.findOne({_id:ObjectID(_id)});
+        const recordDetail = await LocationSchema.findOne({_id:ObjectID(_id), companyIdf: req.user.companyIdf});
 
         if(recordDetail){
             res.status(200).json(await Response.success(recordDetail, responseMessage(reqObj.langCode, 'SUCCESS')));
@@ -191,7 +192,8 @@ async function getList(req, res) {
                 }
             } 
         
-            let allRecords = await LocationSchema.aggregate([                
+            let allRecords = await LocationSchema.aggregate([
+                { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
                 {
                    $facet:{
                       data:[
@@ -207,7 +209,7 @@ async function getList(req, res) {
            res.status(200).json(await Response.pagination(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),pageData,req));
 
         } else {
-            let allRecords = await LocationSchema.find({}).lean();
+            let allRecords = await LocationSchema.find({ companyIdf: req.user.companyIdf }).lean();
             res.status(200).json(await Response.success(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),req));
         }
         

@@ -43,6 +43,7 @@ module.exports = {
 async function createData(req, res) {
   try {
     let reqObj = req.body;
+    reqObj.companyIdf = req.user.companyIdf;
     reqObj.created_by = reqObj.login_user_id;
     reqObj.updated_by = reqObj.login_user_id;
 
@@ -116,6 +117,7 @@ async function updateData(req, res) {
     let updatedData = await GstSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -174,19 +176,19 @@ async function deleteData(req, res) {
       };
     }
 
-    let getData = await GstSchema.findOne({ _id: ObjectID(_id) });
+    let getData = await GstSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!getData) {
     
 
       throw {
         errors: [],
-        message: responseMessage(loginData.langCode, "NO_RECORD_FOUND"),
+        message: responseMessage(reqObj.langCode, "NO_RECORD_FOUND"),
         statusCode: 412,
       };
     }
 
-    const dataRemoved = await GstSchema.deleteOne({ _id: ObjectID(_id) });
+    const dataRemoved = await GstSchema.deleteOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
   await invalidateEntity("gst");
     res
@@ -236,7 +238,7 @@ async function getDetails(req, res) {
       });
     }
 
-    const recordDetail = await GstSchema.findOne({ _id: ObjectID(_id) });
+    const recordDetail = await GstSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     let response;
 
@@ -307,6 +309,7 @@ async function getList(req, res) {
     // ---------------- PAGINATED ----------------
     if (hasPagination) {
       const allRecords = await GstSchema.aggregate([
+        { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
         {
           $facet: {
             data: [
@@ -328,7 +331,7 @@ async function getList(req, res) {
     }
     // ---------------- NON-PAGINATED ----------------
     else {
-      const allRecords = await GstSchema.find({}).lean();
+      const allRecords = await GstSchema.find({ companyIdf: req.user.companyIdf }).lean();
 
       response = await Response.success(
         allRecords,

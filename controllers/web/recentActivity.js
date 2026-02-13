@@ -22,7 +22,7 @@ module.exports = {
 async function getList(req, res) {
     try {
         // Fetch all activities sorted by most recent first
-        const tasks = await RecentActivity.find().sort({ _id: -1 });
+        const tasks = await RecentActivity.find({ companyIdf: req.user.companyIdf }).sort({ _id: -1 });
         res.send(tasks);
     } catch (error) {
         return res.status(error.statusCode || 422).json(

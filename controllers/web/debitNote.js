@@ -52,6 +52,7 @@ const createData = async (req, res) => {
     // Create new debit note with empty credit note array
     const newDebitNote = await DebitNote.create({
       ...req.body,
+      companyIdf: req.user.companyIdf,
       creditNote: [], // Initialize with empty credit notes array
     });
 
@@ -79,7 +80,7 @@ const getList = async (req, res) => {
     const { site, vendorId, poNumber, status } = req.query;
 
     // Build filter object based on query parameters
-    const filter = {};
+    const filter = { companyIdf: req.user.companyIdf };
     if (site) filter.site = site;
     if (vendorId) filter.vendorId = vendorId;
     if (poNumber) filter.poNumber = poNumber;
@@ -116,7 +117,7 @@ const updateData = async (req, res) => {
     const updateData = req.body;
 
     // Check if debit note exists
-    const debitNote = await DebitNote.findById(debitNoteId);
+    const debitNote = await DebitNote.findOne({ _id: debitNoteId, companyIdf: req.user.companyIdf });
     if (!debitNote) {
       return Response.error(res, 404, "Debit Note not found");
     }
@@ -153,7 +154,7 @@ const updateData = async (req, res) => {
     }
 
     // Update debit note and return updated document
-    const updated = await DebitNote.findByIdAndUpdate(debitNoteId, updateData, {
+    const updated = await DebitNote.findOneAndUpdate({ _id: debitNoteId, companyIdf: req.user.companyIdf }, updateData, {
       new: true, // Return updated document instead of original
     });
 
@@ -189,7 +190,7 @@ const getNewDebitNoteNumber = async (req, res) => {
     const financialYear = `${currentYear}-${nextYear}`;
 
     // Find the latest Debit Note for the given site to get the last number
-    const lastNote = await DebitNote.find({ site: siteId })
+    const lastNote = await DebitNote.find({ site: siteId, companyIdf: req.user.companyIdf })
       .sort({ createdAt: -1 }) // Get most recent
       .limit(1)
       .lean();
@@ -241,7 +242,7 @@ const getEligibleInvoicesForDebitNote = async (req, res) => {
 
     // Step 1: Find DMR entry IDs that are already referenced by existing Debit Notes for this PO
     // This prevents duplicate debit notes for the same invoice
-    const usedDmrEntries = await DebitNote.find({ poNumber }).distinct(
+    const usedDmrEntries = await DebitNote.find({ poNumber, companyIdf: req.user.companyIdf }).distinct(
       "dmrEntries"
     ); // Returns array of ObjectId strings
 
@@ -251,6 +252,7 @@ const getEligibleInvoicesForDebitNote = async (req, res) => {
       PONumber: poNumber,
       entry_type: "InvoiceNumber", // Only invoice entries, not challans
       _id: { $nin: usedDmrEntries || [] }, // Exclude already used DMR entries
+      companyIdf: req.user.companyIdf,
     })
       .select(
         "InvoiceNumber PONumber invoice_date vendor_detail vendorInvoiceTotal DebitNoteDetails dmritem DMR_No"
@@ -285,7 +287,7 @@ const getDebitNoteDataFromDMR = async (req, res) => {
     }
 
     // Fetch all selected DMR Entries
-    const dmrEntries = await DMREntrySchema.find({ _id: { $in: dmrIds } });
+    const dmrEntries = await DMREntrySchema.find({ _id: { $in: dmrIds }, companyIdf: req.user.companyIdf });
 
     // Validate that DMR entries exist
     if (dmrEntries.length === 0) {
@@ -298,6 +300,7 @@ const getDebitNoteDataFromDMR = async (req, res) => {
     // Find the highest debit entry number for the site to generate next number
     const dmrNumber = await DebitNote.findOne({
       site: ObjectID(dmrEntries[0].Site),
+      companyIdf: req.user.companyIdf,
     })
       .sort({ debitEntryNumber: -1 }) // Sort descending to get highest number
       .select("debitEntryNumber");
@@ -308,6 +311,7 @@ const getDebitNoteDataFromDMR = async (req, res) => {
     // Fetch DMR Purchase Order details for vendor and address information
     const dmrOrder = await DMROrderSchema.find({
       po_number: dmrEntries[0].PONumber,
+      companyIdf: req.user.companyIdf,
     })
       .populate("vendor_detail", "name address") // Populate vendor details
       .populate("billingAddress", "address") // Populate billing address

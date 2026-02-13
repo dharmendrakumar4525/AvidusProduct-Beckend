@@ -29,7 +29,7 @@ module.exports = {
  */
 async function getList(req, res) {
     try {
-        const permissions = await Permission.find();
+        const permissions = await Permission.find({ companyIdf: req.user.companyIdf });
         res.send(permissions);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -52,7 +52,7 @@ async function getList(req, res) {
  */
 async function getDetails(req, res) {
     try {
-        const permission = await Permission.findById(req.params.id);
+        const permission = await Permission.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
         if (!permission) return res.send('no permission exits');
         res.send(permission);
     } catch (error) {
@@ -80,6 +80,7 @@ async function createData(req, res) {
     try {
         // Create new permission
         let permission = new Permission({
+            companyIdf: req.user.companyIdf,
             permission: req.body.permission,
         });
         
@@ -110,7 +111,7 @@ async function createData(req, res) {
 async function updateData(req, res) {
     try {
         // Update permission and return updated document
-        const permission = await Permission.findByIdAndUpdate(req.params.id, {
+        const permission = await Permission.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             permission: req.body.permission,
         }, { new: true });
         
@@ -131,7 +132,7 @@ async function updateData(req, res) {
 
 async function deleteById(req, res) {
     try {
-        const permission = await Permission.findByIdAndRemove(req.params.id)
+        const permission = await Permission.findOneAndRemove({ _id: req.params.id, companyIdf: req.user.companyIdf })
 
         if(!permission) return res.send('permission not deleted')
      

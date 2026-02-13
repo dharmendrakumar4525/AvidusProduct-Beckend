@@ -24,6 +24,11 @@ const config = require("../config/env");
 
 const ImprestDmrEntrySchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Site
      * Site name

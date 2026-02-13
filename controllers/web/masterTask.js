@@ -32,7 +32,7 @@ module.exports = {
  */
 async function getList(req, res) {
     try {
-        const tasks = await MasterTask.find();
+        const tasks = await MasterTask.find({ companyIdf: req.user.companyIdf });
         res.send(tasks);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -61,12 +61,13 @@ async function getList(req, res) {
 async function createData(req, res) {
     try {
         // Check if task name already exists
-        const mtaskExits = await MasterTask.findOne({ taskName: req.body.taskName });
+        const mtaskExits = await MasterTask.findOne({ taskName: req.body.taskName, companyIdf: req.user.companyIdf });
 
         if (mtaskExits) return res.status(400).send({ status: 'faild', message: "this activity already exits" });
 
         // Create new master task
         let task = new MasterTask({
+            companyIdf: req.user.companyIdf,
             taskName: req.body.taskName,
         });
 
@@ -77,6 +78,7 @@ async function createData(req, res) {
 
         // Log activity
         let recentActivity = new RecentActivity({
+            companyIdf: req.user.companyIdf,
             description: `new activity ${task.taskName} created`
         });
         recentActivity = await recentActivity.save();
@@ -107,12 +109,12 @@ async function createData(req, res) {
 async function updateData(req, res) {
     try {
         // Check if task name already exists (excluding current task)
-        const mtaskExits = await MasterTask.findOne({ taskName: req.body.taskName });
+        const mtaskExits = await MasterTask.findOne({ taskName: req.body.taskName, companyIdf: req.user.companyIdf });
 
         if (mtaskExits) return res.status(400).send({ status: 'faild', message: "this activity already exits" });
 
         // Update master task
-        const task = await MasterTask.findByIdAndUpdate(req.params.id, {
+        const task = await MasterTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             taskName: req.body.taskName
         }, { new: true });
         
@@ -140,7 +142,7 @@ async function updateData(req, res) {
  */
 async function getDetails(req, res) {
     try {
-        const task = await MasterTask.findById(req.params.id);
+        const task = await MasterTask.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!task) return res.send('no task exits');
 
@@ -173,7 +175,7 @@ async function deleteDetails(req, res) {
         }
         
         // Delete multiple master tasks
-        let deleteProductsResponse = await MasterTask.remove({ _id: { $in: kk } });
+        let deleteProductsResponse = await MasterTask.remove({ _id: { $in: kk }, companyIdf: req.user.companyIdf });
 
         if (!deleteProductsResponse) return res.send('role not deleted');
 
@@ -202,6 +204,7 @@ async function deleteById(req, res) {
     try {
         // Aggregate master task with its subtasks
         const task = await MasterTask.aggregate([
+            { $match: { companyIdf: require('mongodb').ObjectID(req.user.companyIdf) } },
             // Convert _id to string for lookup
             { "$addFields": { "taskId": { "$toString": "$_id" }}},
             // Join with master subtasks collection

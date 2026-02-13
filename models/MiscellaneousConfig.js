@@ -15,6 +15,11 @@
 const mongoose = require("mongoose");
 
 const MiscellaneousConfigSchema = new mongoose.Schema({
+  companyIdf: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "onboardingcompany",
+      required: true
+  },
   /**
    * Type
    * Configuration type/key identifier (e.g., "amount", "special_case", etc.)

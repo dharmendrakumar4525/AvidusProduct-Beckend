@@ -23,6 +23,11 @@ const schema = mongoose.Schema;
 const config = require('../config/env');
 
 const projectActivityDataSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Project ID
      * Reference to the project

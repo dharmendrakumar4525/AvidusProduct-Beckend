@@ -100,7 +100,7 @@ const accessPath = process.env.ACCESS_PATH;
  * 
  * @returns {Promise<Number>} Next number in sequence
  */
-function getNextNumberGroupId(groupId, moduleName = "") {
+function getNextNumberGroupId(groupId, moduleName = "", companyIdf = "") {
   return new Promise(async (resolve, reject) => {
     try {
       let getNumberGroup;
@@ -108,10 +108,12 @@ function getNextNumberGroupId(groupId, moduleName = "") {
       if (moduleName) {
         getNumberGroup = await NumberingGroupSchema.findOne({
           module: moduleName,
+          ...(companyIdf && { companyIdf }),
         });
       } else {
         getNumberGroup = await NumberingGroupSchema.findOne({
           _id: ObjectID(groupId),
+          ...(companyIdf && { companyIdf }),
         });
       }
 
@@ -123,6 +125,7 @@ function getNextNumberGroupId(groupId, moduleName = "") {
         await new NumberingGroupSchema({
           module: moduleName,
           next_id: 1,
+          ...(companyIdf && { companyIdf }),
         }).save();
         resolve(1);
       }
@@ -134,19 +137,19 @@ function getNextNumberGroupId(groupId, moduleName = "") {
 }
 
 /* Update invoice id for next result */
-function updateNextNumberGroupId(groupId, moduleName = "") {
+function updateNextNumberGroupId(groupId, moduleName = "", companyIdf = "") {
   return new Promise(async (resolve, reject) => {
     try {
       let getNumberGroup;
 
       if (moduleName) {
         getNumberGroup = await NumberingGroupSchema.findOneAndUpdate(
-          { module: moduleName },
+          { module: moduleName, ...(companyIdf && { companyIdf }) },
           { $inc: { next_id: 1 } }
         );
       } else {
         getNumberGroup = await NumberingGroupSchema.findOneAndUpdate(
-          { _id: ObjectID(groupId) },
+          { _id: ObjectID(groupId), ...(companyIdf && { companyIdf }) },
           { $inc: { next_id: 1 } }
         );
       }
@@ -186,6 +189,9 @@ function addRateApproval(dataObj, langCode, login_user_id) {
       let cloneData = { ...dataObj };
 
       let getVendors = await VendorSchema.aggregate([
+        {
+          $match: { companyIdf: ObjectID(dataObj.companyIdf) },
+        },
         {
           $project: {
             vendor_id: "$_id",
@@ -232,7 +238,7 @@ function addRateApproval(dataObj, langCode, login_user_id) {
 
         let promises = dataObj.items.map(async (o, index) => {
           let getItemDetail = await ItemSchema.aggregate([
-            { $match: { _id: ObjectID(o.item_id) } },
+            { $match: { _id: ObjectID(o.item_id), companyIdf: ObjectID(dataObj.companyIdf) } },
             {
               $lookup: {
                 from: "gsts",
@@ -341,7 +347,7 @@ function addRateApproval(dataObj, langCode, login_user_id) {
 
       //console.log("checking console data", cloneData);
 
-      let getNumber = await getNextNumberGroupId("", "rate_approval");
+      let getNumber = await getNextNumberGroupId("", "rate_approval", dataObj.companyIdf);
 
       cloneData.rate_approval_number = getNumber;
 
@@ -356,7 +362,7 @@ function addRateApproval(dataObj, langCode, login_user_id) {
       });
       let savedData = await new RateApprovalSchema(cloneData).save();
       //console.log("are we getting dataObj", savedData);
-      updateNextNumberGroupId("", "rate_approval");
+      updateNextNumberGroupId("", "rate_approval", dataObj.companyIdf);
 
       //const users = await getUsersBySiteId(ObjectID(savedData.site));
       /*const users = await UserSchema.find({ sites: ObjectID(savedData.site)}).lean();
@@ -401,10 +407,10 @@ function addRateApproval(dataObj, langCode, login_user_id) {
   });
 }
 
-function checkVendorCount() {
+function checkVendorCount(companyIdf) {
   return new Promise(async (resolve, reject) => {
     try {
-      let getVendors = await VendorSchema.find().lean();
+      let getVendors = await VendorSchema.find({ ...(companyIdf && { companyIdf }) }).lean();
 
       if (getVendors && getVendors.length > 0) {
         resolve(true);
@@ -417,10 +423,10 @@ function checkVendorCount() {
   });
 }
 
-function getVendorListByLocation() {
+function getVendorListByLocation(companyIdf) {
   return new Promise(async (resolve, reject) => {
     try {
-      let getVendors = await VendorSchema.find().sort({ _id: 1 }).lean();
+      let getVendors = await VendorSchema.find({ ...(companyIdf && { companyIdf }) }).sort({ _id: 1 }).lean();
 
       if (getVendors && getVendors.length > 0) {
         resolve(getVendors);
@@ -436,7 +442,7 @@ function getVendorListByLocation() {
 async function updateTotalCumulativeQuantity(activityData) {
   let getTotalQuantity = await ProjectActivityDataSchema.aggregate([
     {
-      $match: { activity_ref_id: activityData.activity_ref_id },
+      $match: { activity_ref_id: activityData.activity_ref_id, ...(activityData.companyIdf && { companyIdf: ObjectID(activityData.companyIdf) }) },
     },
     {
       $group: { _id: null, totalQuantity: { $sum: "$daily_quantity" } },
@@ -451,6 +457,7 @@ async function updateTotalCumulativeQuantity(activityData) {
   let updatedData = await ProjectSchema.updateOne(
     {
       _id: ObjectID(activityData.project_id),
+      ...(activityData.companyIdf && { companyIdf: activityData.companyIdf }),
       "locations.structures.activities._id": ObjectID(
         activityData.activity_ref_id
       ),
@@ -473,6 +480,7 @@ async function checkTotalQuantityValidation(activityData, updatedQuantity) {
     let getprojectData = await ProjectSchema.findOne(
       {
         _id: ObjectID(activityData.project_id),
+        ...(activityData.companyIdf && { companyIdf: activityData.companyIdf }),
         "locations._id": ObjectID(activityData.location_ref_id),
       },
       { "locations.$": 1 }
@@ -515,6 +523,7 @@ async function checkTotalQuantityValidation(activityData, updatedQuantity) {
         $match: {
           activity_ref_id: activityData.activity_ref_id,
           _id: { $ne: ObjectID(activityData._id) },
+          ...(activityData.companyIdf && { companyIdf: ObjectID(activityData.companyIdf) }),
         },
       },
       {
@@ -573,6 +582,7 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
           // Find the item by item_name
           const itemData = await ItemSchema.findOne({
             item_code: item.item_code,
+            companyIdf: dataObj.companyIdf,
           }).exec();
           if (!itemData) {
             console.error(`Item with name ${item.name} not found.`);
@@ -585,7 +595,7 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
 
             // Find the vendor by vendorId
             //console.log("vendorId", vendorId);
-            const vendorObject = await VendorSchema.findById(vendorId).exec();
+            const vendorObject = await VendorSchema.findOne({ _id: vendorId, companyIdf: dataObj.companyIdf }).exec();
             if (!vendorObject) {
               console.error(`Vendor with ID ${vendorId} not found.`);
               continue; // Skip if vendor is not found
@@ -643,6 +653,7 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
         //getting site address
         const getSiteData = await SiteSchema.findOne({
           _id: ObjectID(dataObj.site),
+          companyIdf: dataObj.companyIdf,
         })
           .populate("roles.store_manager") // Only populate store_manager
           .lean();
@@ -662,7 +673,7 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
         }
 
         //geting vendorList
-        let vendorsList = await VendorSchema.find({}).lean();
+        let vendorsList = await VendorSchema.find({ companyIdf: dataObj.companyIdf }).lean();
         vendorsAssociatedArray = {};
         if (vendorsList && vendorsList.length > 0) {
           let allVendorsPromise = vendorsList.map(async (obj) => {
@@ -683,9 +694,10 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
         const localPurchaseOrders = await PurchaseOrderSchema.countDocuments({
           site: dataObj.site,
           local_purchase: "yes",
+          companyIdf: dataObj.companyIdf,
         });
         bodyobj.Pocount = localPurchaseOrders + 1;
-        siteDetails = await SiteSchema.findById(ObjectID(dataObj.site));
+        siteDetails = await SiteSchema.findOne({ _id: ObjectID(dataObj.site), companyIdf: dataObj.companyIdf });
       }
 
       //console.log("dataObj.vendorRatesItemWise", vendorMap);
@@ -712,6 +724,7 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
         //console.log("GEtPoNo+++++++++++++++++", getPoNo);
 
         let order = {
+          companyIdf: dataObj.companyIdf,
           po_number: getPoNo,
           order_Type: dataObj.order_Type,
           //billing_cycle: dataObj.billing_cycle,
@@ -816,11 +829,12 @@ function addPurchaseOrder(dataObj, langCode, login_user_id, bodyobj) {
   });
 }
 
-function updateActivityLog(description) {
+function updateActivityLog(description, companyIdf) {
   return new Promise(async (resolve, reject) => {
     try {
       let recentActivity = new RecentActivity({
         description: description,
+        ...(companyIdf && { companyIdf }),
       });
       recentActivity = await recentActivity.save();
 
@@ -846,13 +860,14 @@ async function addLocalPurchaseOrder(input, langCode, login_user_id) {
   }
   console.log("checking ID", input._id);
   // Fetch and validate data
-  const siteDetails = await SiteSchema.findById(ObjectID(input.site));
-  const vendorDetails = await VendorSchema.findById(ObjectID(input.vendor));
+  const siteDetails = await SiteSchema.findOne({ _id: ObjectID(input.site), companyIdf: input.companyIdf });
+  const vendorDetails = await VendorSchema.findOne({ _id: ObjectID(input.vendor), companyIdf: input.companyIdf });
   //console.log("siteDetails", vendorDetails);
   // Generate PO number
   const localPurchaseOrders = await PurchaseOrderSchema.countDocuments({
     site: input.site,
     local_purchase: "yes",
+    companyIdf: input.companyIdf,
   });
   const poNumber = `${localPurchaseOrders + 1}`;
 
@@ -903,9 +918,10 @@ async function addLocalPurchaseOrder(input, langCode, login_user_id) {
   // Construct items
   const items = await Promise.all(
     input.items.map(async (item) => {
-      const itemDetails = await ItemSchema.findById(
-        ObjectID(item.item_id)
-      ).lean(); // Fetch item details
+      const itemDetails = await ItemSchema.findOne({
+        _id: ObjectID(item.item_id),
+        companyIdf: input.companyIdf,
+      }).lean(); // Fetch item details
 
       // Fetch related data from Category, SubCategory, and UOM schemas
 
@@ -961,6 +977,7 @@ async function addLocalPurchaseOrder(input, langCode, login_user_id) {
 
   // Return formatted purchase order object
   let newPurchaseOrder = {
+    companyIdf: input.companyIdf,
     po_number: poNumber,
 
     order_Type: input.order_Type,
@@ -1163,7 +1180,7 @@ async function DownloadQuotationsZip(req, res) {
   const { id } = req.query;
   //console.log("id", id);
   try {
-    const rateApproval = await RateApprovalSchema.findById(ObjectID(id));
+    const rateApproval = await RateApprovalSchema.findOne({ _id: ObjectID(id), companyIdf: req.user.companyIdf });
     //console.log("rateApproval", rateApproval);
     if (!rateApproval) {
       return res
@@ -1225,6 +1242,7 @@ async function DownloadCreditZip(req, res) {
     // 🔹 Find all credit notes that have this debitNoteId in settledDebitNotes
     const creditNotes = await creditNoteSchema.find({
       "settledDebitNotes.debitNoteId": ObjectID(debitNoteId),
+      companyIdf: req.user.companyIdf,
     });
 
     if (!creditNotes || creditNotes.length === 0) {
@@ -1292,6 +1310,7 @@ async function DownloadCreditZipByPO(req, res) {
     // 🔹 Find all credit notes that have this debitNoteId in settledDebitNotes
     const creditNotes = await creditNoteSchema.find({
       poNumber: poNumber,
+      companyIdf: req.user.companyIdf,
     });
 
     if (!creditNotes || creditNotes.length === 0) {
@@ -1359,6 +1378,7 @@ async function DownloadDMRDocumentZipByPO(req, res) {
     // 🔹 Find all credit notes that have this debitNoteId in settledDebitNotes
     const dmrEntries = await dmrEntry.find({
       PONumber: PONumber,
+      companyIdf: req.user.companyIdf,
     });
 
     if (!dmrEntries || dmrEntries.length === 0) {
@@ -1418,7 +1438,8 @@ async function DownloadDMRDocumentZipByPO(req, res) {
 
 async function getDashboardCounts(req, res) {
   try {
-    const cacheKey = "dashboard:counts";
+    const companyIdf = req.user.companyIdf;
+    const cacheKey = `dashboard:counts:${companyIdf}`;
 
     // 🔹 Check cache first
     const cached = await getCache(cacheKey);
@@ -1437,11 +1458,11 @@ async function getDashboardCounts(req, res) {
       Items,
       Organisations
     ] = await Promise.all([
-      User.countDocuments({}),
-      Site.countDocuments({}),
-      Vendor.countDocuments({}),
-      Item.countDocuments({}),
-      Organisation.countDocuments({})
+      User.countDocuments({ companyIdf }),
+      Site.countDocuments({ companyIdf }),
+      Vendor.countDocuments({ companyIdf }),
+      Item.countDocuments({ companyIdf }),
+      Organisation.countDocuments({ companyIdf })
     ]);
 
     const data = {

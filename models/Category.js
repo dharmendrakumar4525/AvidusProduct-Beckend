@@ -12,6 +12,11 @@ const config = require("../config/env");
 
 const CategorySchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     // Category identification
     name: {
       type: String,

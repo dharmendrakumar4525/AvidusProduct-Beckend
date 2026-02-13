@@ -29,6 +29,7 @@ module.exports = {
 async function createData(req, res) {
     try {
         let reqObj = req.body;
+        reqObj.companyIdf = req.user.companyIdf;
         reqObj.created_by = reqObj.login_user_id;
         reqObj.updated_by = reqObj.login_user_id;
 
@@ -73,7 +74,8 @@ async function updateData(req, res) {
         let requestedData = { ...reqObj, ...{ updated_by: loginUserId } };
 
         let updatedData = await StructureSchema.findOneAndUpdate({
-            _id: ObjectID(reqObj._id)
+            _id: ObjectID(reqObj._id),
+            companyIdf: req.user.companyIdf
         }, requestedData, {
             new: true
         });
@@ -111,17 +113,17 @@ async function deleteData(req, res) {
             }
         }
 
-        let getData = await StructureSchema.findOne({ "_id": ObjectID(_id)});
+        let getData = await StructureSchema.findOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
 
         if (!getData) {
             throw {
                 errors: [],
-                message: responseMessage(loginData.langCode, 'NO_RECORD_FOUND'),
+                message: responseMessage(reqObj.langCode, 'NO_RECORD_FOUND'),
                 statusCode: 412
             }
         }
 
-        const dataRemoved = await StructureSchema.deleteOne({ "_id": ObjectID(_id)});
+        const dataRemoved = await StructureSchema.deleteOne({ "_id": ObjectID(_id), companyIdf: req.user.companyIdf });
         
         res.status(200).json(await Response.success({}, responseMessage(reqObj.langCode,'RECORD_DELETED'),req));
 
@@ -150,7 +152,7 @@ async function getDetails(req, res) {
             }
         }
 
-        const recordDetail = await StructureSchema.findOne({_id:ObjectID(_id)});
+        const recordDetail = await StructureSchema.findOne({_id:ObjectID(_id), companyIdf: req.user.companyIdf});
 
         if(recordDetail){
             res.status(200).json(await Response.success(recordDetail, responseMessage(reqObj.langCode, 'SUCCESS')));
@@ -190,7 +192,8 @@ async function getList(req, res) {
                 }
             } 
         
-            let allRecords = await StructureSchema.aggregate([                
+            let allRecords = await StructureSchema.aggregate([
+                { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
                 {
                    $facet:{
                       data:[
@@ -206,7 +209,7 @@ async function getList(req, res) {
            res.status(200).json(await Response.pagination(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),pageData,req));
 
         } else {
-            let allRecords = await StructureSchema.find({}).lean();
+            let allRecords = await StructureSchema.find({ companyIdf: req.user.companyIdf }).lean();
             res.status(200).json(await Response.success(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),req));
         }
         

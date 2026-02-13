@@ -107,7 +107,7 @@ async function updateData(req, res) {
     }
 
     // Get existing PR to preserve history
-    const existingPR = await RateApprovalSchema.findById(reqObj._id).lean();
+    const existingPR = await RateApprovalSchema.findOne({ _id: reqObj._id, companyIdf: req.user.companyIdf }).lean();
 
     // Build PR history array
     let prHistory = Array.isArray(existingPR.prHistory)
@@ -151,6 +151,7 @@ async function updateData(req, res) {
     let updatedData = await RateApprovalSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -386,6 +387,7 @@ async function updateFiles(req, res) {
     let updatedData = await RateApprovalSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -464,7 +466,7 @@ async function getList(req, res) {
       ? { [sort_by]: sort_order === "desc" ? -1 : 1 }
       : { purchase_request_number: -1 };
 
-    const filterRequest = {};
+    const filterRequest = { companyIdf: ObjectID(req.user.companyIdf) };
 
     // Date filter
     if (startDate || endDate) {
@@ -681,6 +683,7 @@ async function getPendingRateApprovalList(req, res) {
       : { purchase_request_number: -1 };
 
     const filterRequest = {
+      companyIdf: ObjectID(req.user.companyIdf),
       status: { $in: ["revise", "pending"] },
       stage: "rate_approval",
     };
@@ -885,7 +888,7 @@ async function getDetails(req, res) {
     }
 
     const rateApprovalData = await RateApprovalSchema.aggregate([
-      { $match: { _id: ObjectID(_id) } },
+      { $match: { _id: ObjectID(_id), companyIdf: ObjectID(req.user.companyIdf) } },
 
       { $unwind: "$items" },
 
@@ -1123,8 +1126,8 @@ async function LocalPurchaseComparative(req, res) {
 
   try {
     // 1. Delete the RateApproval document
-    const deletedRateApproval = await RateApprovalSchema.findByIdAndDelete(
-      ObjectID(_id)
+    const deletedRateApproval = await RateApprovalSchema.findOneAndDelete(
+      { _id: ObjectID(_id), companyIdf: req.user.companyIdf }
     );
 
     if (!deletedRateApproval) {
@@ -1133,8 +1136,8 @@ async function LocalPurchaseComparative(req, res) {
 
     // 2. Update the corresponding PurchaseRequest document
 
-    const existingPR = await PurchaseRequest.findById(
-      ObjectID(purchase_request_id)
+    const existingPR = await PurchaseRequest.findOne(
+      { _id: ObjectID(purchase_request_id), companyIdf: req.user.companyIdf }
     ).lean();
 
     let prHistory = Array.isArray(existingPR.prHistory)
@@ -1151,7 +1154,7 @@ async function LocalPurchaseComparative(req, res) {
     prHistory.push(historyEntry);
 
     const updatedPurchaseRequest = await PurchaseRequest.findOneAndUpdate(
-      { _id: ObjectID(purchase_request_id) },
+      { _id: ObjectID(purchase_request_id), companyIdf: req.user.companyIdf },
       {
         prHistory: prHistory,
         status: "revise",
@@ -1198,7 +1201,7 @@ async function deleteData(req, res) {
       };
     }
     let record = await RateApprovalSchema.findOneAndDelete({
-      company_id: company_id,
+      companyIdf: req.user.companyIdf,
       _id: ObjectID(_id),
     });
 
@@ -1252,7 +1255,7 @@ async function rateApprovalSummary(req, res) {
     }
 
     // ---- Build match criteria ----
-    let matchCriteria = {};
+    let matchCriteria = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (prType?.trim()) {
       matchCriteria.prType = prType;
@@ -1480,6 +1483,7 @@ async function getDetailsByPRNumber(req, res) {
     // Build query object
     const query = {
       site: ObjectID(site),
+      companyIdf: req.user.companyIdf,
       purchase_request_number: prNumber,
     };
 
@@ -1522,6 +1526,7 @@ async function getUniqueOpenRCTitle(req, res) {
 
     const titles = await RateApprovalSchema.distinct("title", {
       site: ObjectID(siteId),
+      companyIdf: req.user.companyIdf,
       prType: prType,
       purchase_request_numbers: [],
       status: { $in: ["pending", "revise"] },
@@ -1548,6 +1553,7 @@ async function getPendingPRNumbers(req, res) {
 
     const rateApprovals = await RateApprovalSchema.find({
       site: ObjectID(siteId),
+      companyIdf: req.user.companyIdf,
       title: title,
       prType: prType,
       purchase_request_numbers: { $size: 0 }, // match empty array
@@ -1692,6 +1698,7 @@ async function combineRateApprovals(req, res) {
     // Step 1: Find matched docs
     const matchedDocs = await RateApprovalSchema.find({
       _id: { $in: _ids.map((id) => ObjectID(id)) },
+      companyIdf: req.user.companyIdf,
       status: { $in: ["pending", "revise"] },
       stage: "rate_comparitive",
     });
@@ -1748,12 +1755,14 @@ async function combineRateApprovals(req, res) {
     ]; // Reset history for new document
 
     // Step 7: Save new combined document
+    base.companyIdf = req.user.companyIdf;
     const newRateApproval = new RateApprovalSchema(base);
     await newRateApproval.save();
 
     // Step 8: Delete old documents
     await RateApprovalSchema.deleteMany({
       _id: { $in: _ids.map((id) => ObjectID(id)) },
+      companyIdf: req.user.companyIdf,
     });
 
      await invalidateEntityList("rc");
@@ -1786,6 +1795,7 @@ async function rejectRateApprovals(req, res) {
     const parsedPR = parseInt(purchaseRequestNumber);
 
     const totalDocuments = await PurchaseRequest.countDocuments({
+      companyIdf: req.user.companyIdf,
       $expr: {
         $and: [
           { $eq: ["$site", ObjectID(siteId)] },
@@ -1801,6 +1811,7 @@ async function rejectRateApprovals(req, res) {
     while (hasMore) {
       const documents = await PurchaseRequest.find(
         {
+          companyIdf: req.user.companyIdf,
           $expr: {
             $and: [
               { $eq: ["$site", ObjectID(siteId)] },
@@ -1817,7 +1828,7 @@ async function rejectRateApprovals(req, res) {
         const ids = documents.map((doc) => doc._id);
 
         const result = await PurchaseRequest.updateMany(
-          { _id: { $in: ids } },
+          { _id: { $in: ids }, companyIdf: req.user.companyIdf },
           {
             $set: {
               pd_approvedDate: new Date(),
@@ -1861,6 +1872,7 @@ async function GetUniquePR(req, res) {
     const allOrders = await RateApprovalSchema.find(
       {
         site: ObjectID(site),
+        companyIdf: req.user.companyIdf,
         status: "pending",
         purchase_request_numbers: [], // Is this supposed to be purchase_request_number ?
         stage: "rate_comparitive",
@@ -1897,6 +1909,7 @@ async function CreateSplitRateApproval(req, res) {
     let reqObj = req.body;
     let loginUserId = reqObj.login_user_id;
 
+    reqObj.companyIdf = req.user.companyIdf;
     let result = await addRateApproval(
       {
         ...reqObj,
@@ -1940,7 +1953,7 @@ async function DashboardRateApprovalStats (req, res) {
     }
 
     // ---- Build match ----
-    const match = {};
+    const match = { companyIdf: ObjectID(req.user.companyIdf) };
 
     if (site?.trim()) {
       match.site = new ObjectID(site);

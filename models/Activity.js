@@ -15,6 +15,11 @@ const schema = mongoose.Schema;
 const config = require('../config/env');
 
 const ActivitySchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Activity Name
      * Name of the activity

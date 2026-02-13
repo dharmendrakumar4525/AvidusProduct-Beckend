@@ -42,7 +42,7 @@ async function createData(req, res) {
     var dataObject = req.body;
 
     // Create new imprest DMR entry
-    let dmrForm = new ImprestdmrEntry({ ...req.body });
+    let dmrForm = new ImprestdmrEntry({ ...req.body, companyIdf: req.user.companyIdf });
 
     // Save to database
     dmrForm = await dmrForm.save();
@@ -122,7 +122,7 @@ async function getList(req, res) {
     }
 
     // Build filters
-    const filterRequest = {};
+    const filterRequest = { companyIdf: new ObjectID(req.user.companyIdf) };
 
     // Site filter
     if (site && ObjectID.isValid(site)) filterRequest.Site = new ObjectID(site);
@@ -242,6 +242,7 @@ async function updateData(req, res) {
     let updatedData = await ImprestDmrEntry.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -310,7 +311,7 @@ console.log("_id", _id);
         
 
     // Fetch the object by its ID
-    const object = await ImprestdmrEntry.findById(ObjectID(_id));
+    const object = await ImprestdmrEntry.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!object) {
       return res.status(404).json({
@@ -347,7 +348,7 @@ async function getDMRNumberBYSite(req, res) {
     }
 
     // Fetch objects with the given site ID and sort them by imprestNumber in descending order
-    const objects = await ImprestdmrEntry.find({ Site: site })
+    const objects = await ImprestdmrEntry.find({ Site: site, companyIdf: req.user.companyIdf })
       .sort({ imprestNumber: -1 }) // Sort in descending order
       .exec();
 
@@ -384,7 +385,7 @@ async function getUniqueDMRNumber(req, res) {
   try {
     const { query = "" } = req.query;
 
-    const allOrders = await ImprestdmrEntry.find({}, { DMR_No: 1 });
+    const allOrders = await ImprestdmrEntry.find({ companyIdf: req.user.companyIdf }, { DMR_No: 1 });
 
     const poLastFourSet = new Set();
 
@@ -426,7 +427,7 @@ async function checkDuplicateBill (req, res) {
     const existingBill = await ImprestDmrEntry.findOne({
       Site: site,
       BillNumber: { $regex: `^${bill}$`, $options: 'i' }, // case-insensitive
-      
+      companyIdf: req.user.companyIdf,
     });
 
     //console.log("check existingInvoice", existingInvoice);
@@ -467,8 +468,8 @@ async function  updateDocSubmissionAndRemark (req, res)  {
       return res.status(400).json({ message: "At least one field is required" });
     }
 
-    const updatedEntry = await ImprestdmrEntry.findByIdAndUpdate(
-      id,
+    const updatedEntry = await ImprestdmrEntry.findOneAndUpdate(
+      { _id: id, companyIdf: req.user.companyIdf },
       {
         ...(DateOfDocSubmissionToHO && { DateOfDocSubmissionToHO }),
         ...(remarksForAudit && { remarksForAudit }),

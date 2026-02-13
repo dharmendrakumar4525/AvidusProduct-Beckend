@@ -37,7 +37,7 @@ module.exports = {
  */
 async function getList(req, res) {
     try {
-        const subTasks = await SubTask.find();
+        const subTasks = await SubTask.find({ companyIdf: req.user.companyIdf });
         res.send(subTasks);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -61,7 +61,7 @@ async function getList(req, res) {
  */
 async function getDataByID(req, res) {
     try {
-        const subTask = await SubTask.findById(req.params.id);
+        const subTask = await SubTask.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!subTask) return res.send('no subTask exits');
 
@@ -88,7 +88,7 @@ async function getDataByID(req, res) {
  */
 async function getActivitesDataByID(req, res) {
     try {
-        const subTasks = await SubTask.find({ projectId: req.params.id });
+        const subTasks = await SubTask.find({ projectId: req.params.id, companyIdf: req.user.companyIdf });
         res.send(subTasks);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -155,7 +155,7 @@ async function createData(req, res) {
 async function updateData(req, res) {
     try {
         // Update subtask with progress data
-        const subTask = await SubTask.findByIdAndUpdate(req.params.id, {
+        const subTask = await SubTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             addRevisesDates: req.body.addRevisesDates,
             actualRevisedStartDate: req.body.actualRevisedStartDate,
             workingDaysRevised: req.body.workingDaysRevised,
@@ -214,7 +214,7 @@ async function updateData(req, res) {
 async function updatedailyTotalUpdateData(req, res) {
     try {
         // Get existing subtask record
-        const record = await SubTask.findById(req.params.id);
+        const record = await SubTask.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!record) return res.send('no subTask exits');
 
@@ -222,7 +222,7 @@ async function updatedailyTotalUpdateData(req, res) {
         let totalUpdate = Number(record.dailyCumulativeTotal) + Number(req.body.cumTotal);
 
         // Update subtask with new cumulative total
-        const subTask = await SubTask.findByIdAndUpdate(req.params.id, {
+        const subTask = await SubTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             dailyCumulativeTotal: totalUpdate,
             previousValue: Number(req.body.cumTotal),
             totalDate: req.body.addedDate,
@@ -231,6 +231,7 @@ async function updatedailyTotalUpdateData(req, res) {
 
         // Create line graph entry for progress visualization
         let lineGraph = new LineGraph({
+            companyIdf: req.user.companyIdf,
             value: Number(req.body.cumTotal),
             date: req.body.addedDate,
             projectId: req.body.projectId,
@@ -276,7 +277,7 @@ async function updatedailyTotalUpdateData(req, res) {
 async function TotalUpdateData(req, res) {
     try {
         // Get existing subtask record
-        const record = await SubTask.findById(req.params.id);
+        const record = await SubTask.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!record) return res.send('no subTask exits');
 
@@ -284,7 +285,7 @@ async function TotalUpdateData(req, res) {
         let totalUpdate = (Number(record.dailyCumulativeTotal) - Number(record.previousValue)) + Number(req.body.cumTotal);
 
         // Update subtask with new cumulative total
-        const subTask = await SubTask.findByIdAndUpdate(req.params.id, {
+        const subTask = await SubTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             dailyCumulativeTotal: totalUpdate,
             previousValue: Number(req.body.cumTotal),
             totalDate: req.body.addedDate,
@@ -325,7 +326,7 @@ async function TotalUpdateData(req, res) {
 async function remarkUpdateData(req, res) {
     try {
         // Update subtask remarks
-        const subTask = await SubTask.findByIdAndUpdate(req.params.id, {
+        const subTask = await SubTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             remarks: req.body.remarks,
         }, { new: true });
 
@@ -355,11 +356,11 @@ async function remarkUpdateData(req, res) {
 async function updateRemarkData(req, res) {
     try {
         // Check if subtask exists
-        const record = await SubTask.findById(req.params.id);
+        const record = await SubTask.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
         if (!record) return res.send('no subTask exits');
         
         // Update subtask remarks
-        const subTask = await SubTask.findByIdAndUpdate(req.params.id, {
+        const subTask = await SubTask.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             remarks: req.body.remarks
         }, { new: true });
         
@@ -387,7 +388,7 @@ async function updateRemarkData(req, res) {
 async function deleteData(req, res) {
     try {
         // Delete subtask
-        const subTask = await SubTask.findByIdAndRemove(req.params.id);
+        const subTask = await SubTask.findOneAndRemove({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!subTask) return res.send('subTask not deleted');
 
@@ -418,7 +419,7 @@ async function deleteData(req, res) {
 async function deleteManyData(req, res) {
     try {
         // Delete all subtasks matching the task name
-        const subTask = await SubTask.deleteMany({ "taskName": req.body.name });
+        const subTask = await SubTask.deleteMany({ "taskName": req.body.name, companyIdf: req.user.companyIdf });
 
         if (!subTask) return res.send('subTask not deleted');
 

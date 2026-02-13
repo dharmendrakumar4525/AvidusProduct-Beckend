@@ -54,7 +54,7 @@ async function createData(req, res) {
     const { name, sites, email, phone, role, employeeCode } = req.body;
 
     // Check if an employee with the same employeeCode already exists
-    const existingStaff = await SiteStaff.findOne({ employeeCode });
+    const existingStaff = await SiteStaff.findOne({ employeeCode, companyIdf: req.user.companyIdf });
 
     if (existingStaff) {
       // If employeeCode already exists, throw an error
@@ -73,6 +73,7 @@ async function createData(req, res) {
       phone,
       role,
       employeeCode,
+      companyIdf: req.user.companyIdf,
     });
 
     // Save site staff to database
@@ -132,6 +133,7 @@ async function updateData(req, res) {
     let updatedData = await SiteStaff.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -199,7 +201,7 @@ async function deleteData(req, res) {
     }
 
     // Check if site staff exists
-    let getData = await SiteStaff.findOne({ _id: ObjectID(_id) });
+    let getData = await SiteStaff.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!getData) {
       throw {
@@ -210,7 +212,7 @@ async function deleteData(req, res) {
     }
 
     // Delete site staff
-    const dataRemoved = await SiteStaff.deleteOne({ _id: ObjectID(_id) });
+    const dataRemoved = await SiteStaff.deleteOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
  
      res
        .status(200)
@@ -249,7 +251,7 @@ async function deleteData(req, res) {
 async function getDataByID(req, res) {
 //console.log(req);
   try {
-     const staff = await SiteStaff.findById(req.query);
+     const staff = await SiteStaff.findOne({ _id: req.query._id, companyIdf: req.user.companyIdf });
     
         if (!staff) return res.send("no Staff  exits");
     
@@ -311,7 +313,7 @@ async function uploadSiteStaffCSV(req, res) {
       .on("end", async () => {
         try {
           // Process the CSV data (validate, map sites)
-          const processedData = await processSiteStaffCSVData(results);
+          const processedData = await processSiteStaffCSVData(results, req.user.companyIdf);
 
           // Save the processed data to the database
           const savedStaff = await SiteStaff.insertMany(processedData);
@@ -362,13 +364,13 @@ async function uploadSiteStaffCSV(req, res) {
     }
   }
   
-  async function processSiteStaffCSVData(data) {
+  async function processSiteStaffCSVData(data, companyIdf) {
     const processedData = [];
     const errors = [];
   
     // Fetch all existing site staff to avoid duplicates
     const existingStaff = new Set(
-      (await SiteStaff.find({}, "email")).map((staff) => staff.email?.toLowerCase()).filter(Boolean)
+      (await SiteStaff.find({ companyIdf }, "email")).map((staff) => staff.email?.toLowerCase()).filter(Boolean)
     );
   
     for (const [index, row] of data.entries()) {
@@ -416,7 +418,7 @@ async function uploadSiteStaffCSV(req, res) {
       //console.log("______________!!!!!!!!!__________", siteCodes);
       const siteRefs = [];
       for (const siteCode of siteCodes) {
-        const site = await SiteSchema.findOne({ code: siteCode });
+        const site = await SiteSchema.findOne({ code: siteCode, companyIdf });
         if (site) {
           siteRefs.push(site._id);
         } else {
@@ -431,6 +433,7 @@ async function uploadSiteStaffCSV(req, res) {
         role,
         employeeCode,
         sites: siteRefs,
+        companyIdf,
       };
   
       processedData.push(staffData);
@@ -457,7 +460,7 @@ async function getList(req, res) {
       : { _id: 1 };
 
     // Build match filter
-    const matchFilter= {};
+    const matchFilter= { companyIdf: ObjectID(req.user.companyIdf) };
     if (search) {
       matchFilter.name = { $regex: search, $options: "i" };
     }

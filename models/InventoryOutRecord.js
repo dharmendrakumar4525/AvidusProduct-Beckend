@@ -34,6 +34,11 @@ const InventoryTypes = {
 };
 
 const InventoryOutRecordSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Site
      * Site ID where issue is made

@@ -81,11 +81,13 @@ router.post("/create", async (req, res) => {
     // Count existing assets with the same subcategory for sequential numbering
     const Assetcount = await AssetTracker.countDocuments({
      subCategory: { $regex: data.subcategory },
+     companyIdf: req.user.companyIdf,
     });
     
     // Count existing vouchers with the same category for sequential numbering
     const Vouchercount = await AssetTracker.countDocuments({
      catgeory: { $regex: data.catgeory },
+     companyIdf: req.user.companyIdf,
     });
 
     // Generate unique asset code and voucher number
@@ -94,6 +96,7 @@ router.post("/create", async (req, res) => {
     
     // Create new asset with auto-filled fields
     const newAsset = new AssetTracker({
+      companyIdf: req.user.companyIdf,
       po_number: data.po_number,
       po_date: data.po_date,
       department: data.department || "P&M", // Default department

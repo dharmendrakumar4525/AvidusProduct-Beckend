@@ -70,7 +70,7 @@ async function createData(req, res) {
     } = req.body;
 
     // Step 1: Get the last contractor record to determine next code
-    const lastContractor = await ContractorSchema.findOne()
+    const lastContractor = await ContractorSchema.findOne({ companyIdf: req.user.companyIdf })
       .sort({ code: -1 }) // Sort by code in descending order
       .exec();
 
@@ -83,7 +83,7 @@ async function createData(req, res) {
     }
 
     // Step 3: Check if a contractor with the same email or phone already exists
-    const existingStaff = await ContractorSchema.findOne({ email, phone });
+    const existingStaff = await ContractorSchema.findOne({ email, phone, companyIdf: req.user.companyIdf });
 
     if (existingStaff) {
       // If email or phone already exists, throw an error
@@ -96,6 +96,7 @@ async function createData(req, res) {
 
     // Step 4: If unique, proceed with saving the new contractor
     const newContractorSchema = new ContractorSchema({
+      companyIdf: req.user.companyIdf,
       name,
       number: lastCodeNumber + 1,
       code: newCode, // Assign the generated code
@@ -175,6 +176,7 @@ async function updateData(req, res) {
     let updatedData = await ContractorSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -242,7 +244,7 @@ async function deleteData(req, res) {
     }
 
     // Check if contractor exists
-    let getData = await ContractorSchema.findOne({ _id: ObjectID(_id) });
+    let getData = await ContractorSchema.findOne({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
     if (!getData) {
       throw {
@@ -255,6 +257,7 @@ async function deleteData(req, res) {
     // Delete contractor
     const dataRemoved = await ContractorSchema.deleteOne({
       _id: ObjectID(_id),
+      companyIdf: req.user.companyIdf,
     });
 
     res
@@ -291,7 +294,7 @@ async function deleteData(req, res) {
  */
 async function getDataByID(req, res) {
   try {
-    const staff = await ContractorSchema.findById(req.query);
+    const staff = await ContractorSchema.findOne({ ...req.query, companyIdf: req.user.companyIdf });
 
     if (!staff) return res.send("no Staff exits");
 
@@ -563,7 +566,7 @@ async function getList(req, res) {
       : { _id: 1 };
 
     // Build match filter
-    const matchFilter = {};
+    const matchFilter = { companyIdf: mongoose.Types.ObjectId(req.user.companyIdf) };
     if (search) {
       matchFilter.name = { $regex: search, $options: "i" }; // Case-insensitive search
     }

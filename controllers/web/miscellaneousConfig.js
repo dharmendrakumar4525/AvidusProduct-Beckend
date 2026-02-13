@@ -36,6 +36,7 @@ async function createData(req, res) {
         let miscellaneous = new miscellaneousConfig({
             type: reqObj.type,
             value: reqObj.value,
+            companyIdf: req.user.companyIdf,
         });
         
         // Save to database
@@ -69,10 +70,11 @@ async function updateData(req, res) {
         let reqObj = req.body;
 
         // Update configuration and return updated document
-        const miscellaneous = await miscellaneousConfig.findByIdAndUpdate(id, {
-            type: reqObj.type,
-            value: reqObj.value,
-        }, { new: true });
+        const miscellaneous = await miscellaneousConfig.findOneAndUpdate(
+            { _id: id, companyIdf: req.user.companyIdf },
+            { type: reqObj.type, value: reqObj.value },
+            { new: true }
+        );
 
         res.send(miscellaneous);
     } catch (error) {
@@ -94,7 +96,7 @@ async function updateData(req, res) {
 async function getList(req, res) {
     try {
         let reqObj = req.body;
-        const miscellaneous = await miscellaneousConfig.find({});
+        const miscellaneous = await miscellaneousConfig.find({ companyIdf: req.user.companyIdf });
         res.send(miscellaneous);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -120,7 +122,7 @@ async function getDetails(req, res) {
         let reqObj = req.params;  // Get request parameters
 
         // Find configuration by type
-        const miscellaneous = await miscellaneousConfig.findOne({ type: reqObj.type });
+        const miscellaneous = await miscellaneousConfig.findOne({ type: reqObj.type, companyIdf: req.user.companyIdf });
 
         if (!miscellaneous) return res.status(404).send('No data found for this type');
 

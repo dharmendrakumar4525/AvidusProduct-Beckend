@@ -28,7 +28,7 @@ module.exports = {
  */
 async function getList(req, res) {
     try {
-        const tasks = await Task.find();
+        const tasks = await Task.find({ companyIdf: req.user.companyIdf });
         res.send(tasks);
     } catch (error) {
         return res.status(error.statusCode || 422).json(
@@ -52,7 +52,7 @@ async function getList(req, res) {
  */
 async function getDataByID(req, res) {
     try {
-        const task = await Task.findById(req.params.id);
+        const task = await Task.findOne({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!task) return res.send('no task exits');
 
@@ -85,6 +85,7 @@ async function createData(req, res) {
     try {
         // Create new task instance
         let task = new Task({
+            companyIdf: req.user.companyIdf,
             taskName: req.body.taskName,
             startDate: req.body.startDate,
             endDate: req.body.endDate,
@@ -121,7 +122,7 @@ async function createData(req, res) {
 async function updateData(req, res) {
     try {
         // Update task and return updated document
-        const task = await Task.findByIdAndUpdate(req.params.id, {
+        const task = await Task.findOneAndUpdate({ _id: req.params.id, companyIdf: req.user.companyIdf }, {
             taskName: req.body.taskName,
         }, { new: true });
 
@@ -150,7 +151,7 @@ async function updateData(req, res) {
  */
 async function deleteData(req, res) {
     try {
-        const task = await Task.findByIdAndRemove(req.params.id);
+        const task = await Task.findOneAndRemove({ _id: req.params.id, companyIdf: req.user.companyIdf });
 
         if (!task) return res.send('task not deleted');
 
@@ -180,18 +181,18 @@ async function getTasksListData(req, res) {
         // Aggregate tasks with their subtasks for a specific project
         const task = await Task.aggregate([
             {
+                $match: {
+                    companyIdf: require('mongodb').ObjectID(req.user.companyIdf),
+                    projectId: req.params.id
+                }
+            },
+            {
                 // Join with subtasks collection
                 $lookup: {
                     from: "subtasks",
                     localField: "taskId",
                     foreignField: "taskId",
                     as: "result" // Array of subtasks
-                }
-            },
-            {
-                // Filter by project ID
-                $match: {
-                    projectId: req.params.id
                 }
             }
         ]);

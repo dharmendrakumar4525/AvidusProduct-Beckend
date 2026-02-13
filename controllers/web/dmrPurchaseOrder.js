@@ -58,6 +58,7 @@ async function createData(req, res) {
   try {
     // Extract DMR order data from request body
     const dataObject = req.body["0"];
+    dataObject.companyIdf = req.user.companyIdf;
     //console.log("Creating DMR Purchase Order:", dataObject);
 
     // Initialize PR history with creation entry
@@ -132,6 +133,7 @@ async function updateData(req, res) {
     let updatedData = await DMROrderSchema.findOneAndUpdate(
       {
         _id: ObjectID(reqObj._id),
+        companyIdf: req.user.companyIdf,
       },
       requestedData,
       {
@@ -211,7 +213,7 @@ async function getList(req, res) {
     }
 
     // Filters
-    const filterRequest = {};
+    const filterRequest = { companyIdf: new ObjectID(req.user.companyIdf) };
 
     if (prType) filterRequest.prType = prType;
 
@@ -363,7 +365,7 @@ async function getOpenPOList(req, res) {
     }
 
     let filterRequest = {
-      $and: [],
+      $and: [{ companyIdf: new ObjectID(req.user.companyIdf) }],
     };
 
     if (site) {
@@ -476,7 +478,7 @@ async function getDetails(req, res) {
       };
     }
 
-    let recordDetail = await DMROrderSchema.find({ _id: ObjectID(_id) });
+    let recordDetail = await DMROrderSchema.find({ _id: ObjectID(_id), companyIdf: req.user.companyIdf });
 
      await setCache(cacheKey, recordDetail, 900);
     
@@ -556,6 +558,7 @@ async function getDMRDetailsByPO(req, res) {
     const recordDetail = await DMROrderSchema.findOne({
       site: new ObjectID(site),
       po_number: po,
+      companyIdf: req.user.companyIdf,
     }).lean();
 
     if (!recordDetail) {
@@ -638,7 +641,7 @@ async function deleteData(req, res) {
       };
     }
     let record = await DMROrderSchema.findOneAndDelete({
-      company_id: company_id,
+      companyIdf: req.user.companyIdf,
       _id: ObjectID(_id),
     });
  await invalidateEntity("DMRORDER");
@@ -683,6 +686,7 @@ async function updateHoldDMROrder(req, res) {
     let dmrItem = await DMREntrySchema.findOne({
       PONumber: po_number,
       status: "hold",
+      companyIdf: req.user.companyIdf,
     });
 
     if (!dmrItem) {
@@ -752,7 +756,7 @@ async function updateHoldDMROrder(req, res) {
 
     // Update the passed object status in the DMROrderSchema
     let updatedData = await DMROrderSchema.findOneAndUpdate(
-      { _id: reqObj._id },
+      { _id: reqObj._id, companyIdf: req.user.companyIdf },
       { ...reqObj, status: reqObj.status }
     );
     //console.log("_____________3vhecking there too______",updatedData)
@@ -807,8 +811,8 @@ async function DMRStatusCount(req, res) {
       DMR_No,
     } = req.query;
 
-    let filterRequest = {};
-    let imprestFilter = {};
+    let filterRequest = { companyIdf: new ObjectID(req.user.companyIdf) };
+    let imprestFilter = { companyIdf: req.user.companyIdf };
      const cacheKey = `DMRORDER:STATUS_COUNT:${JSON.stringify(req.query)}`;
       const cachedData = await getCache(cacheKey);
          if (cachedData) {
@@ -959,8 +963,8 @@ async function updateClosingStatus(req, res) {
     }
 
     // Find and update the document
-    const updatedOrder = await DMROrderSchema.findByIdAndUpdate(
-      id,
+    const updatedOrder = await DMROrderSchema.findOneAndUpdate(
+      { _id: id, companyIdf: req.user.companyIdf },
       {
         closing_category,
         closing_remark,
@@ -994,7 +998,7 @@ async function GetUniquePR(req, res) {
     //console.log("query", query);
     // Fetch only the relevant fields
     const allOrders = await DMROrderSchema.find(
-      {},
+      { companyIdf: req.user.companyIdf },
       {
         purchase_request_number: 1,
         purchase_request_numbers: 1,
@@ -1041,7 +1045,7 @@ async function getUniquePONumbers(req, res) {
   try {
     const { query = "" } = req.query;
 
-    const allOrders = await DMROrderSchema.find({}, { po_number: 1 });
+    const allOrders = await DMROrderSchema.find({ companyIdf: req.user.companyIdf }, { po_number: 1 });
 
     const poSet = new Set();
 

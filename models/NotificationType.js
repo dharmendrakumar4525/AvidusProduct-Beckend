@@ -15,6 +15,11 @@ const mongoose = require('mongoose');
 const config = require('../config/env');
 
 const NotificationTypeSchema = new mongoose.Schema({
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * Type
      * Notification type identifier

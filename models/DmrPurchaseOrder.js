@@ -16,6 +16,11 @@ const config = require("../config/env");
 
 const DmrPurchaseOrderSchema = new mongoose.Schema(
   {
+    companyIdf: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "onboardingcompany",
+        required: true
+    },
     /**
      * DMR Number
      * Unique DMR identifier
