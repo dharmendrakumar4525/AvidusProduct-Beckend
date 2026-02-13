@@ -143,8 +143,16 @@ async function createData(req, res) {
     let logoUrl = null;
     let signatureUrl = null;
 
- console.log("BODY:", req.body);
-console.log("FILES:", req.files);
+    // ✅ Case-insensitive duplicate check
+    const existingCompany = await OnboardingCompany.findOne({
+      name: { $regex: `^${req.body.name}$`, $options: "i" }
+    });
+
+    if (existingCompany) {
+      return res.status(400).json({
+        message: "Company name already exists"
+      });
+    }
 
 // Find files inside array
 const logoFile = req.files.find(file => file.fieldname === "logo");

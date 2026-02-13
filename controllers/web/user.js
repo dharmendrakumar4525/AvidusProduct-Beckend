@@ -19,6 +19,7 @@ const bcrypt = require("bcryptjs");
 const mongoose = require("mongoose");
 const Response = require("../../libs/response");
 const jwt = require("jsonwebtoken");
+require('dotenv').config();
 
 // Export all controller functions
 module.exports = {
@@ -84,6 +85,7 @@ async function getList(req, res) {
     // Build base query with population and sorting
     let usersQuery = User.find(query)
       .populate("sites") // Populate site references
+      .populate("companyId")
       .sort({ name: sortOrder }) // Sort by name
       .lean(); // Return plain objects
 
@@ -161,6 +163,7 @@ async function getDataByID(req, res) {
     // Step 2: Fetch from MongoDB if not in cache
     let user = await User.findById(userId)
       .populate("sites") // Populate site references
+      .populate("companyId")
       .lean();
 
     if (!user) return res.send("no user exists");
@@ -234,6 +237,7 @@ async function updateData(req, res) {
         password: hashedPassword,
         sites: req.body.sites,
         notifications: req.body.notifications,
+        companyId:req.body.companyId
       };
     } else {
       updatedata = {
@@ -243,6 +247,7 @@ async function updateData(req, res) {
         phone: req.body.phone,
         sites: req.body.sites,
         notifications: req.body.notifications,
+        companyId:req.body.companyId,
         // password:req.body.password,
       };
     }
@@ -355,6 +360,7 @@ async function createUser(req, res) {
       password: hashedPassword, // Store hashed password, never plain text
       sites: req.body.sites,
       notifications: req.body.notifications,
+       companyId: req.body.companyId
     });
 
     // Save user to database
@@ -417,8 +423,8 @@ async function loginUser(req, res) {
     // Generate JWT token with user ID and name
     // Note: In production, use environment variable for secret key
     const token = jwt.sign(
-      { id: userExits._id, name: userExits.name },
-      "secret"
+      { id: userExits._id, name: userExits.name,companyId: userExits.companyId },
+       process.env.JWT_SECRET,
     );
 
     // Fetch user's role to get permissions

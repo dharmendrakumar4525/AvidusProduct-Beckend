@@ -75,6 +75,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // Company association (Each user belongs to one company)
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "onboardingcompany",
+      required: true,
+    },
   
   // Account creation date
   date: {
