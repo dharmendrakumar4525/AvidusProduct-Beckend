@@ -173,13 +173,11 @@ async function getDetails(req, res) {
 
 
 async function getList(req, res) {
-
     try {
         let reqObj = req.body;
 
         let {page,per_page,sort_by,sort_order} = req.query; 
         let pageData = Response.validationPagination(page,per_page);
-
         if (page > 0) {
 
             let sort = {
@@ -191,7 +189,6 @@ async function getList(req, res) {
                     [sort_by]:order
                 }
             } 
-        
             let allRecords = await LocationSchema.aggregate([
                 { $match: { companyIdf: ObjectID(req.user.companyIdf) } },
                 {
@@ -209,13 +206,14 @@ async function getList(req, res) {
            res.status(200).json(await Response.pagination(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),pageData,req));
 
         } else {
-            let allRecords = await LocationSchema.find({ companyIdf: req.user.companyIdf }).lean();
+            let allRecords = await LocationSchema.find({ companyIdf: ObjectID(req.user.companyIdf) }).lean();
             res.status(200).json(await Response.success(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),req));
         }
         
         
 
     } catch (error) {
+        console.log(error,"err")
         return res.status(error.statusCode || 422).json(
             await Response.errors({
                 errors: error.errors,

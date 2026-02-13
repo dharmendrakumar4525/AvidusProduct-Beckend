@@ -15,13 +15,10 @@ const middleware = {
           })
         );
       }
-
       // 2️⃣ Extract token
       const token = authHeader.replace("Bearer ", "");
-
       // 3️⃣ Verify token
-      const decoded = jwt.verify(token, env.secret);
-
+      let decoded = jwt.verify(token, env.secret);
       // 4️⃣ Validate decoded token
       if (!decoded || !decoded.id) {
         return res.status(401).json(
@@ -30,7 +27,6 @@ const middleware = {
           })
         );
       }
-
       // 5️⃣ Validate companyIdf for multi-tenant isolation
       if (!decoded.companyIdf) {
         return res.status(401).json(
@@ -45,6 +41,7 @@ const middleware = {
 
       next();
     } catch (error) {
+      console.log(error,"err")
       return res.status(401).json(
         await Response.errors({
           message: responseMessage("en", "TOKEN_VERIFICATON_FAILED"),

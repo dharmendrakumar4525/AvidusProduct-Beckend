@@ -359,8 +359,9 @@ async function createUser(req, res) {
       password: hashedPassword, // Store hashed password, never plain text
       sites: req.body.sites,
       notifications: req.body.notifications,
-      companyIdf: req.user.companyIdf
+      companyIdf: req.body.companyIdf
     });
+    // console.log(companyIdf,"company")
 
     // Save user to database
     const savedUser = await user.save();
@@ -371,6 +372,7 @@ async function createUser(req, res) {
     // Create recent activity log entry
     let recentActivity = new RecentActivity({
       description: `New user ${savedUser.name} created`,
+      companyIdf:req.body.companyIdf,
     });
     recentActivity = await recentActivity.save();
 
@@ -379,6 +381,7 @@ async function createUser(req, res) {
 
     res.send({ user: populatedUser });
   } catch (error) {
+    console.log(error,"err")
     return res.status(error.statusCode || 422).json(
       await Response.errors(
         {
@@ -406,7 +409,7 @@ async function loginUser(req, res) {
     // Find user by email and populate sites
     const userExits = await User.findOne({ email: req.body.email }).populate(
       "sites"
-    ).populate("companyIdf");
+    )
     // Validate user exists
     if (!userExits) return res.status(400).send("email not exit");
 
