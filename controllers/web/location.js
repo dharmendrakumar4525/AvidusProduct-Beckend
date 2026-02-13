@@ -206,7 +206,7 @@ async function getList(req, res) {
            res.status(200).json(await Response.pagination(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),pageData,req));
 
         } else {
-            let allRecords = await LocationSchema.find({ companyIdf: ObjectID(req.user.companyIdf) }).lean();
+            let allRecords = await LocationSchema.find({ companyIdf: req.user.companyIdf }).lean();
             res.status(200).json(await Response.success(allRecords, responseMessage(reqObj.langCode,'SUCCESS'),req));
         }
         

@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const env = require("../config/env");
 const Response = require("../libs/response");
 const { responseMessage } = require("../libs/responseMessages");
+const { ObjectId } = require("mongodb");
 
 const middleware = {
   jwtVerify: async (req, res, next) => {
@@ -35,7 +36,8 @@ const middleware = {
           })
         );
       }
-
+// ✅ Convert companyIdf to ObjectId
+decoded.companyIdf = new ObjectId(decoded.companyIdf);
       // 6️⃣ Attach user to request
       req.user = decoded;
 
